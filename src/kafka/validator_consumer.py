@@ -2,23 +2,34 @@ import json, signal, sys
 from collections import defaultdict
 from datetime import datetime
 from dateutil import parser as dtparser
-from confluent_kafka import Consumer
+from confluent_kafka import DeserializingConsumer
+from confluent_kafka.serialization import StringDeserializer
+from confluent_kafka.schema_registry import SchemaRegistryClient
+from confluent_kafka.schema_registry.avro import AvroDeserializer
 import uuid
 
-KAFKA_TOPIC = "webtoon_user_events"
+KAFKA_TOPIC = "webtoon_user_events_v2"
+
+schema_registry_conf = {
+    "url": "http://localhost:28081"
+}
+schema_registry_client = SchemaRegistryClient(schema_registry_conf)
+avro_deserializer = AvroDeserializer(schema_registry_client)
 
 CONSUMER_CONFIG = {
     "bootstrap.servers": "localhost:9092",
     "group.id": f"validator-{uuid.uuid4()}",
     "auto.offset.reset": "earliest",
     "enable.auto.commit": False,
+    "key.deserializer": StringDeserializer(),
+    "value.deserializer": avro_deserializer
 }
 
 
 stats = defaultdict(int)
 state = {}
 
-consumer = Consumer(CONSUMER_CONFIG)
+consumer = DeserializingConsumer(CONSUMER_CONFIG)
 consumer.subscribe([KAFKA_TOPIC])
 
 
@@ -44,8 +55,8 @@ if __name__ == "__main__":
         if msg.error():
             print("ERROR :", msg.error()); continue
         
-        key = msg.key().decode() if msg.key() else None
-        event = json.loads(msg.value().decode())
+        key = msg.key() if msg.key() else None
+        event = msg.value()
         session_id = event["session_id"]
 
         cur_state = state.get(session_id)
