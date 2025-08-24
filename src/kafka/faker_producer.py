@@ -8,6 +8,7 @@ from datetime import datetime, timedelta, timezone
 from dateutil.tz import gettz
 from faker import Faker
 from confluent_kafka import SerializingProducer
+from confluent_kafka import Producer
 from confluent_kafka.serialization import StringSerializer
 from confluent_kafka.schema_registry import SchemaRegistryClient
 from confluent_kafka.schema_registry.avro import AvroSerializer
@@ -19,7 +20,7 @@ SLEEP_BETWEEN_EVENTS = 1                    # (단위: sec)
 
 SR_URL = "http://localhost:28081"
 sr_client = SchemaRegistryClient({"url": SR_URL})
-value_schema = open("src/kafka/schemas/webtoon_user_events_v1.avsc").read()
+value_schema = open("schemas/webtoon_user_events_v1.avsc").read()
 value_serializer = AvroSerializer(sr_client, value_schema)
 
 PRODUCER_CONFIG = {
@@ -29,8 +30,8 @@ PRODUCER_CONFIG = {
     "linger.ms": 0,                         # 지정한 시간동안 배치 전송
     "retries": 3,
     "partitioner": "murmur2",
-    "key.serializer": StringSerializer("utf_8"),
-    "value.serializer": value_serializer
+    # "key.serializer": StringSerializer("utf_8"),
+    # "value.serializer": value_serializer
 }
 
 fake = Faker()
@@ -187,7 +188,8 @@ def parse_args():
 def main():
     args = parse_args()
 
-    producer = SerializingProducer(PRODUCER_CONFIG)
+    # producer = SerializingProducer(PRODUCER_CONFIG)
+    producer = Producer(PRODUCER_CONFIG)
 
     if not args.binge:
         for _ in range(args.sessions):
@@ -200,8 +202,10 @@ def main():
             for event in session_events:
                 producer.produce(
                     topic=KAFKA_TOPIC,
-                    key=session_id,
-                    value=event,
+                    # key=session_id,
+                    # value=event,
+                    key=str(session_id).encode("utf-8"),
+                    value=json.dumps(event, ensure_ascii=False).encode("utf-8"),
                     on_delivery=delivery_report
                 )
                 producer.poll(0)                        # 콜백 처리와 I/O 처리를 위한 이벤트 루프 돌리기
@@ -223,8 +227,10 @@ def main():
             for event in session_events:
                 producer.produce(
                     topic=KAFKA_TOPIC,
-                    key=session_id,
-                    value=event,
+                    # key=session_id,
+                    # value=event,
+                    key=str(session_id).encode("utf-8"),
+                    value=json.dumps(event, ensure_ascii=False).encode("utf-8"),
                     on_delivery=delivery_report
                 )
                 producer.poll(0)
