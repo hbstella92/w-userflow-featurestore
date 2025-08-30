@@ -16,12 +16,12 @@ from confluent_kafka.schema_registry.avro import AvroSerializer
 KAFKA_TOPIC = "webtoon_user_events_v2"
 
 SCROLL_MIN, SCROLL_MAX = 1, 8
-SLEEP_BETWEEN_EVENTS = 1                    # (단위: sec)
+SLEEP_BETWEEN_EVENTS = 0.3                    # (단위: sec)
 
-SR_URL = "http://localhost:28081"
-sr_client = SchemaRegistryClient({"url": SR_URL})
-value_schema = open("schemas/webtoon_user_events_v1.avsc").read()
-value_serializer = AvroSerializer(sr_client, value_schema)
+# SR_URL = "http://localhost:28081"
+# sr_client = SchemaRegistryClient({"url": SR_URL})
+# value_schema = open("schemas/webtoon_user_events_v1.avsc").read()
+# value_serializer = AvroSerializer(sr_client, value_schema)
 
 PRODUCER_CONFIG = {
     "bootstrap.servers": "localhost:9092",
@@ -151,7 +151,7 @@ def build_session_events(session_id: str, profile: dict, content: dict, out_of_o
     dwell_ms += delta_ms
     t += timedelta(milliseconds=delta_ms)
 
-    is_complete = random.random() < 0.6
+    is_complete = random.random() < 0.8
     if is_complete and ratio < 1.0:
         ratio = min(1.0, max(1.0, ratio + random.uniform(0.01, 0.2)))
     
@@ -193,7 +193,7 @@ def main():
 
     if not args.binge:
         for _ in range(args.sessions):
-            session_id = str(uuid.uuid4())
+            session_id = fake.random_int(min=1, max=10)
             profile = make_session_profile()
             content = make_content()
             
@@ -204,7 +204,7 @@ def main():
                     topic=KAFKA_TOPIC,
                     # key=session_id,
                     # value=event,
-                    key=str(session_id).encode("utf-8"),
+                    key=str(session_id).encode("utf-8"),            # 파티션 내의 순서 보장을 위해
                     value=json.dumps(event, ensure_ascii=False).encode("utf-8"),
                     on_delivery=delivery_report
                 )

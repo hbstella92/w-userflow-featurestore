@@ -3,3 +3,7 @@
 
 # 로그
 airflow/logs/
+
+# spark
+datalake/
+checkpoints/
