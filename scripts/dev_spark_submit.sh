@@ -3,8 +3,7 @@ set -euo pipefail
 
 # container setting
 SPARK_MASTER_CONTAINER="${SPARK_MASTER_CONTAINER:-spark-master}"
-# SPARK_APP_FILE_IN_CONTAINER="${SPARK_APP_FILE_IN_CONTAINER:-/opt/workspace/src/spark/main_avro.py}"
-SPARK_APP_FILE_IN_CONTAINER="${SPARK_APP_FILE_IN_CONTAINER:-/opt/workspace/src/spark/main_default.py}"
+SPARK_APP_FILE_IN_CONTAINER="${SPARK_APP_FILE_IN_CONTAINER:-/opt/workspace/src/spark/streaming_sessions.py}"
 
 # path
 SCRIPT_PATH="${BASH_SOURCE[0]:-$0}"
@@ -59,7 +58,7 @@ docker compose -f "$DOCKER_COMPOSE_FILE" exec -T "$SPARK_MASTER_CONTAINER" bash 
         --conf spark.jars.ivy=/opt/bitnami/spark/.ivy2 \
         --conf spark.hadoop.fs.defaultFS=file:/// \
         --conf spark.sql.catalogImplementation=in-memory \
-        --conf spark.eventLog.enabled=false \
+        --conf spark.sql.shuffle.partitions=1 \
         --conf spark.driver.extraJavaOptions=\"-Duser.name=spark\" \
         --conf spark.executor.extraJavaOptions=\"-Duser.name=spark\" \
         --master \"\$SPARK_MASTER\" \

@@ -1,4 +1,5 @@
 import json
+import os
 import time
 import uuid
 import random
@@ -44,10 +45,9 @@ NETWORKS = ["wifi", "4g", "5g", "offline"]
 
 
 
-# 한 세션동안 불변의 컨텍스트
 def make_session_profile(user_id: int | None = None):
     return {
-        "user_id": user_id if user_id is not None else fake.random_int(min=1, max=5000),
+        "user_id": user_id if user_id is not None else fake.random_int(min=1, max=100),
         # "country": fake.country_code(),
         "country": "KR",
         "platform": random.choice(PLATFORMS),
@@ -56,23 +56,23 @@ def make_session_profile(user_id: int | None = None):
     }
 
 
-# 한 세션은 하나의 (wt_id, ep_id)에 묶임
 def make_content(webtoon_id: str | None = None, episode_id: str | None = None):
     return {
         "webtoon_id": webtoon_id if webtoon_id is not None else f"webtoon_{fake.random_int(min=1, max=10)}",
-        "episode_id": episode_id if episode_id is not None else f"ep_{fake.random_int(min=1, max=30)}"
+        "episode_id": episode_id if episode_id is not None else f"ep_{fake.random_int(min=1, max=20)}"
     }
 
 
 def make_base_event(session_id: str, t: datetime, profile: dict, content: dict, network: str):
     return {
+        "event_id": str(uuid.uuid4()),
         "user_id": profile["user_id"],
         "webtoon_id": content["webtoon_id"],
         "episode_id": content["episode_id"],
         "session_id": session_id,
-        "timestamp": t.astimezone(timezone.utc).isoformat(),
-        # "local_timestamp": t.astimezone(?).isoformat(timespec="seconds"),
-        "local_timestamp": t.astimezone(KST).isoformat(timespec="seconds"),
+        "utimestamptz": t.astimezone(timezone.utc).isoformat(),
+        # "local_timestamptz": t.astimezone(?).isoformat(timespec="seconds"),
+        "local_timestamptz": t.astimezone(KST).isoformat(timespec="seconds"),
         "country": profile["country"],
         "platform": profile["platform"],
         "device": profile["device"],
