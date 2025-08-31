@@ -1,0 +1,105 @@
+import os
+from pyspark.sql import SparkSession
+from pyspark.sql.functions import *
+from pyspark.sql.types import *
+
+
+KAFKA_BOOTSTRAP_SERVERS = os.getenv("KAFKA_BOOTSTRAP_SERVERS")
+KAFKA_TOPIC = os.getenv("KAFKA_TOPIC")
+
+SPARK_APP_NAME = os.getenv("SPARK_APP_NAME")
+SPARK_CHECKPOINT_DIR = os.getenv("SPARK_CHECKPOINT_DIR")
+PARQUET_PATH = "file:///opt/workspace/datalake/parquet"
+
+
+schema = StructType([
+    StructField("event_id", StringType()),
+    StructField("user_id", IntegerType()),
+    StructField("webtoon_id", StringType()),
+    StructField("episode_id", StringType()),
+    StructField("session_id", StringType()),
+    StructField("utimestamptz", StringType()),
+    StructField("local_timestamptz", StringType()),
+    StructField("event_type", StringType()),
+    StructField("country", StringType()),
+    StructField("platform", StringType()),
+    StructField("device", StringType()),
+    StructField("browser", StringType()),
+    StructField("network_type", StringType()),
+    StructField("scroll_ratio", FloatType()),
+    StructField("scroll_event_count", IntegerType()),
+    StructField("dwell_time_ms", LongType())
+])
+
+
+def write_to_parquet(batch_df, batch_id):
+    try:
+        batch_df.write \
+            .mode("append") \
+            .partitionBy("datetime") \
+            .parquet(f"{PARQUET_PATH}/11")
+    except Exception as e:
+        print("[ERROR] Failed to write parquet: ", e)
+
+
+if __name__ == "__main__":
+    ss = SparkSession.builder \
+        .appName(SPARK_APP_NAME) \
+        .getOrCreate()
+    ss.sparkContext.setLogLevel("WARN")
+
+    ss.conf.set("mapreduce.fileoutputcommitter.algorithm.version", "2")
+    ss.conf.set("spark.sql.sources.commitProtocolClass",
+               "org.apache.spark.sql.execution.datasources.SQLHadoopMapReduceCommitProtocol")
+    ss.conf.set("spark.sql.parquet.output.committer.class",
+               "org.apache.parquet.hadoop.ParquetOutputCommitter")
+
+    # read from kafka
+    df_raw = ss.readStream \
+        .format("kafka") \
+        .option("kafka.bootstrap.servers", KAFKA_BOOTSTRAP_SERVERS) \
+        .option("subscribe", KAFKA_TOPIC) \
+        .option("startingOffsets", "latest") \
+        .option("maxOffsetsPerTrigger", "5000") \
+        .option("failOnDataLoss", "true") \
+        .load()
+
+    # transformation
+    df = df_raw.selectExpr("CAST(value AS STRING) as v") \
+        .select(from_json(col("v"), schema).alias("event")) \
+        .select("event.*") \
+        .withColumn("event_ts", to_timestamp("utimestamptz")) \
+        .withColumn("event_local_ts", to_timestamp("local_timestamptz")) \
+        .withColumn("datetime", to_date("utimestamptz")) \
+        .dropna(subset=["event_id", "session_id", "event_ts"])
+    
+    # session window aggregation
+    windowed_df = df.withWatermark("event_ts", "30 seconds") \
+        .groupby("session_id", "user_id", "webtoon_id", "episode_id",
+                #  "platform", "country", "device", "browser",
+                 session_window("event_ts", "30 seconds").alias("window")) \
+        .agg(
+            min("event_ts").alias("start_time"),
+            max("event_ts").alias("end_time"),
+            max("dwell_time_ms").alias("duration_ms"),
+            max("scroll_ratio").alias("max_scroll_ratio"),
+            max(col("event_type") == "enter").alias("seen_enter"),
+            max(col("event_type") == "scroll").alias("seen_scroll"),
+            max(col("event_type") == "complete").alias("seen_complete"),
+            max(col("event_type") == "exit").alias("seen_exit")
+        ) \
+        .withColumn("datetime", to_date("start_time")) \
+        .withColumn("is_complete",
+                    (col("seen_enter") & col("seen_scroll") & col("seen_complete") & (col("max_scroll_ratio") >= 1.0) & (unix_timestamp("end_time") - unix_timestamp("start_time") <= 300)).cast("int")
+        ) \
+        .withColumn("is_exit",
+                    (col("seen_enter") & col("seen_scroll") & (col("seen_complete") == False) & (col("max_scroll_ratio") < 1.0) & (unix_timestamp("end_time") - unix_timestamp("start_time") <= 600)).cast("int")
+        )
+    
+    query = windowed_df.writeStream \
+        .foreachBatch(write_to_parquet) \
+        .outputMode("append") \
+        .option("checkpointLocation", f"{SPARK_CHECKPOINT_DIR}/11") \
+        .trigger(processingTime="30 seconds") \
+        .start() \
+        .awaitTermination()

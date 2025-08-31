@@ -5,5 +5,5 @@
 airflow/logs/
 
 # spark
-datalake/
-checkpoints/
+spark/datalake/
+spark/checkpoints/
