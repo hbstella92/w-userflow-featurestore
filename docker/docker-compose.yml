@@ -85,23 +85,23 @@ services:
     environment:
       KAFKA_BROKER_CONNECT: "kafka:29092"
 
-  postgres:
-    image: postgres:14.18
-    container_name: postgres
-    environment:
-      POSTGRES_USER: byeolong2
-      POSTGRES_PASSWORD: adminadmin12
-      POSTGRES_DB: wuserflow
-    ports:
-      - "5432:5432"
-    volumes:
-      - pg_data:/var/lib/postgresql/data
-      - ../src/db/postgres:/docker-entrypoint-initdb.d
-    healthcheck:
-      test: ["CMD", "pg_isready", "-U", "byeolong2", "-d", "wuserflow"]
-      interval: 5s
-      timeout: 3s
-      retries: 5
+  # postgres:
+  #   image: postgres:14.18
+  #   container_name: postgres
+  #   environment:
+  #     POSTGRES_USER: byeolong2
+  #     POSTGRES_PASSWORD: adminadmin12
+  #     POSTGRES_DB: wuserflow
+  #   ports:
+  #     - "5432:5432"
+  #   volumes:
+  #     - pg_data:/var/lib/postgresql/data
+  #     - ../src/db/postgres:/docker-entrypoint-initdb.d
+  #   healthcheck:
+  #     test: ["CMD", "pg_isready", "-U", "byeolong2", "-d", "wuserflow"]
+  #     interval: 5s
+  #     timeout: 3s
+  #     retries: 5
 
   spark-master:
     build:
@@ -120,9 +120,10 @@ services:
       - "8080:8080"     # Web UI
       - "7077:7077"     # spark 클러스터 간 통신
     volumes:
-      - ..:/opt/workspace
-      - ../datalake:/opt/workspace/datalake
-      - ../checkpoints:/opt/workspace/checkpoints
+      - ../src:/opt/workspace/src
+      - ../.env:/opt/workspace/.env
+      - ../spark/checkpoints:/opt/workspace/checkpoints
+      - ../spark/datalake/parquet:/opt/workspace/datalake/parquet
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8080"]
       interval: 10s
@@ -148,9 +149,10 @@ services:
     ports:
       - "8081:8081"
     volumes:
-      - ..:/opt/workspace
-      - ../datalake:/opt/workspace/datalake
-      - ../checkpoints:/opt/workspace/checkpoints
+      - ../src:/opt/workspace/src
+      - ../.env:/opt/workspace/.env
+      - ../spark/checkpoints:/opt/workspace/checkpoints
+      - ../spark/datalake/parquet:/opt/workspace/datalake/parquet
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8081"]
       interval: 10s
