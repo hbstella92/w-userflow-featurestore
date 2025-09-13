@@ -137,6 +137,9 @@ services:
       context: ./spark
       dockerfile: Dockerfile
     container_name: spark-worker
+    depends_on:
+      spark-master:
+        condition: service_healthy
     user: root
     environment:
       - SPARK_MODE=worker
@@ -145,9 +148,8 @@ services:
       - USER=spark
       - HADOOP_USER_NAME=spark
       - JAVA_TOOL_OPTIONS=-Duser.name=spark
-    depends_on:
-      spark-master:
-        condition: service_healthy
+      - AWS_ACCESS_KEY=${AWS_ACCESS_KEY_ID}
+      - AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}
     ports:
       - "8081:8081"
     volumes:
