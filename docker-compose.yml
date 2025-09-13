@@ -85,24 +85,6 @@ services:
     environment:
       KAFKA_BROKER_CONNECT: "kafka:29092"
 
-  # postgres:
-  #   image: postgres:14.18
-  #   container_name: postgres
-  #   environment:
-  #     POSTGRES_USER: byeolong2
-  #     POSTGRES_PASSWORD: adminadmin12
-  #     POSTGRES_DB: wuserflow
-  #   ports:
-  #     - "5432:5432"
-  #   volumes:
-  #     - pg_data:/var/lib/postgresql/data
-  #     - ../src/db/postgres:/docker-entrypoint-initdb.d
-  #   healthcheck:
-  #     test: ["CMD", "pg_isready", "-U", "byeolong2", "-d", "wuserflow"]
-  #     interval: 5s
-  #     timeout: 3s
-  #     retries: 5
-
   spark-master:
     build:
       context: docker/spark
@@ -167,36 +149,61 @@ services:
       timeout: 5s
       retries: 5
 
-  # airflow:
-  #   image: apache/airflow:2.8.4-python3.10
-  #   container_name: airflow
-  #   depends_on:
-  #     postgres:
-  #       condition: service_healthy
-  #   env_file:
-  #     - ../.env
-  #   environment:
-  #     AIRFLOW__CORE__EXECUTOR: LocalExecutor
-  #     AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://byeolong2:adminadmin12@postgres:5432/feature_store
-  #     AIRFLOW__CORE__LOAD_EXAMPLES: "False"
-  #   volumes:
-  #     - ../airflow/dags:/opt/airflow/dags
-  #     - ../airflow/logs:/opt/airflow/logs
-  #   ports:
-  #     - "8082:8080"
-  #   restart: always
-  #   command: >
-  #     bash -c "
-  #       airflow db init &&
-  #       airflow db migrate &&
-  #       airflow scheduler &
-  #       airflow webserver
-  #     "
-  #   healthcheck:
-  #     test: ["CMD", "curl", "--fail", "http://localhost:8080/health"]
-  #     interval: 10s
-  #     timeout: 5s
-  #     retries: 5
+  airflow-webserver:
+    build:
+      context: docker/airflow
+      dockerfile: Dockerfile
+    container_name: airflow-webserver
+    depends_on:
+      postgres:
+        condition: service_healthy
+    env_file:
+      - .env
+    environment:
+      AIRFLOW__CORE__EXECUTOR: LocalExecutor
+      AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: ${AIRFLOW__DATABASE__SQL_ALCHEMY_CONN}
+      AIRFLOW__CORE__FERNET_KEY: ${AIRFLOW__CORE__FERNET_KEY}
+      AIRFLOW__WEBSERVER__SECRET_KEY: ${AIRFLOW__WEBSERVER__SECRET_KEY}
+      AIRFLOW__CORE__LOAD_EXAMPLES: "False"
+    ports:
+      - "8088:8080"
+    volumes:
+      - ./airflow/dags:/opt/airflow/dags
+      - ./airflow/logs:/opt/airflow/logs
+      - ./airflow/plugins:/opt/airflow/plugins
+
+  airflow-scheduler:
+    build:
+      context: docker/airflow
+      dockerfile: Dockerfile
+    container_name: airflow-scheduler
+    depends_on:
+      postgres:
+        condition: service_healthy
+    env_file:
+      - .env
+    environment:
+      AIRFLOW__CORE__EXECUTOR: LocalExecutor
+      AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: ${AIRFLOW__DATABASE__SQL_ALCHEMY_CONN}
+      AIRFLOW__CORE__FERNET_KEY: ${AIRFLOW__CORE__FERNET_KEY}
+      AIRFLOW__WEBSERVER__SECRET_KEY: ${AIRFLOW__WEBSERVER__SECRET_KEY}
+      AIRFLOW__CORE__LOAD_EXAMPLES: "False"
+    volumes:
+      - ./airflow/dags:/opt/airflow/dags
+      - ./airflow/logs:/opt/airflow/logs
+      - ./airflow/plugins:/opt/airflow/plugins
+
+  postgres:
+    image: postgres:14
+    container_name: postgres
+    env_file:
+      - .env
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+    ports:
+      - "5432:5432"
 
 volumes:
   pg_data:
