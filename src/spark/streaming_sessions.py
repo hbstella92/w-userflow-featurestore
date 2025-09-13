@@ -7,9 +7,9 @@ from pyspark.sql.types import *
 KAFKA_BOOTSTRAP_SERVERS = os.getenv("KAFKA_BOOTSTRAP_SERVERS")
 KAFKA_TOPIC = os.getenv("KAFKA_TOPIC")
 
-SPARK_APP_NAME = os.getenv("SPARK_APP_NAME")
-SPARK_CHECKPOINT_DIR = os.getenv("SPARK_CHECKPOINT_DIR")
-PARQUET_PATH = "file:///opt/workspace/datalake/parquet"
+# SPARK_CHECKPOINT_DIR = os.getenv("SPARK_CHECKPOINT_DIR")
+SPARK_CHECKPOINT_DIR = "/tmp/"
+PARQUET_PATH = os.getenv("SPARK_PARQUET_INPUT_PATH")
 
 
 schema = StructType([
@@ -34,17 +34,23 @@ schema = StructType([
 
 def write_to_parquet(batch_df, batch_id):
     try:
+        print(f"[INFO] Batch {batch_id} input rows: {batch_df.count()}")
+        batch_df.show(5, truncate=False)
+
         batch_df.write \
-            .mode("append") \
+            .mode("overwrite") \
             .partitionBy("datetime") \
-            .parquet(f"{PARQUET_PATH}/11")
+            .parquet(f"{PARQUET_PATH}")
+
+        print(f"[INFO] Batch {batch_id} successfully written")
     except Exception as e:
         print("[ERROR] Failed to write parquet: ", e)
 
 
 if __name__ == "__main__":
     ss = SparkSession.builder \
-        .appName(SPARK_APP_NAME) \
+        .appName("StreamingSessionJob") \
+        .config("spark.hadoop.fs.s3a.endpoint", "s3.amazonaws.com") \
         .getOrCreate()
     ss.sparkContext.setLogLevel("WARN")
 
@@ -61,7 +67,7 @@ if __name__ == "__main__":
         .option("subscribe", KAFKA_TOPIC) \
         .option("startingOffsets", "latest") \
         .option("maxOffsetsPerTrigger", "5000") \
-        .option("failOnDataLoss", "true") \
+        .option("failOnDataLoss", "false") \
         .load()
 
     # transformation
@@ -76,7 +82,7 @@ if __name__ == "__main__":
     # session window aggregation
     windowed_df = df.withWatermark("event_ts", "30 seconds") \
         .groupby("session_id", "user_id", "webtoon_id", "episode_id",
-                #  "platform", "country", "device", "browser",
+                 "platform", "country", "device", "browser",
                  session_window("event_ts", "30 seconds").alias("window")) \
         .agg(
             min("event_ts").alias("start_time"),
@@ -99,7 +105,7 @@ if __name__ == "__main__":
     query = windowed_df.writeStream \
         .foreachBatch(write_to_parquet) \
         .outputMode("append") \
-        .option("checkpointLocation", f"{SPARK_CHECKPOINT_DIR}/11") \
+        .option("checkpointLocation", f"{SPARK_CHECKPOINT_DIR}/19") \
         .trigger(processingTime="30 seconds") \
         .start() \
         .awaitTermination()
