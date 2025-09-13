@@ -7,7 +7,7 @@
 airflow/logs/
 
 # spark
-spark/datalake/
+spark/data/
 spark/checkpoints/
 
 *.pyc
