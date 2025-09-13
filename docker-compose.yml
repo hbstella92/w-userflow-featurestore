@@ -87,7 +87,7 @@ services:
 
   spark-master:
     build:
-      context: docker/spark
+      context: ./docker/spark
       dockerfile: Dockerfile
     container_name: spark-master
     user: root                                # 컨테이너 프로세스 실행 권한 계정 (반드시 /etc/passwd에 존재하는 리눅스 계정이어야 함)
@@ -118,7 +118,7 @@ services:
 
   spark-worker:
     build:
-      context: docker/spark
+      context: ./docker/spark
       dockerfile: Dockerfile
     container_name: spark-worker
     depends_on:
@@ -151,7 +151,7 @@ services:
 
   airflow-webserver:
     build:
-      context: docker/airflow
+      context: ./docker/airflow
       dockerfile: Dockerfile
     container_name: airflow-webserver
     depends_on:
@@ -174,7 +174,7 @@ services:
 
   airflow-scheduler:
     build:
-      context: docker/airflow
+      context: ./docker/airflow
       dockerfile: Dockerfile
     container_name: airflow-scheduler
     depends_on:
@@ -204,6 +204,13 @@ services:
       POSTGRES_DB: ${POSTGRES_DB}
     ports:
       - "5432:5432"
+    volumes:
+      - pg_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      retries: 5
+      interval: 10s
+      timeout: 5s
 
 volumes:
   pg_data:
