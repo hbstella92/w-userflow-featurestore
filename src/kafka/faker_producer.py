@@ -1,4 +1,5 @@
 import json
+import os
 import time
 import uuid
 import random
@@ -8,6 +9,7 @@ from datetime import datetime, timedelta, timezone
 from dateutil.tz import gettz
 from faker import Faker
 from confluent_kafka import SerializingProducer
+from confluent_kafka import Producer
 from confluent_kafka.serialization import StringSerializer
 from confluent_kafka.schema_registry import SchemaRegistryClient
 from confluent_kafka.schema_registry.avro import AvroSerializer
@@ -15,12 +17,12 @@ from confluent_kafka.schema_registry.avro import AvroSerializer
 KAFKA_TOPIC = "webtoon_user_events_v2"
 
 SCROLL_MIN, SCROLL_MAX = 1, 8
-SLEEP_BETWEEN_EVENTS = 1                    # (단위: sec)
+SLEEP_BETWEEN_EVENTS = 0.3                    # (단위: sec)
 
-SR_URL = "http://localhost:28081"
-sr_client = SchemaRegistryClient({"url": SR_URL})
-value_schema = open("src/kafka/schemas/webtoon_user_events_v1.avsc").read()
-value_serializer = AvroSerializer(sr_client, value_schema)
+# SR_URL = "http://localhost:28081"
+# sr_client = SchemaRegistryClient({"url": SR_URL})
+# value_schema = open("schemas/webtoon_user_events_v1.avsc").read()
+# value_serializer = AvroSerializer(sr_client, value_schema)
 
 PRODUCER_CONFIG = {
     "bootstrap.servers": "localhost:9092",
@@ -29,8 +31,8 @@ PRODUCER_CONFIG = {
     "linger.ms": 0,                         # 지정한 시간동안 배치 전송
     "retries": 3,
     "partitioner": "murmur2",
-    "key.serializer": StringSerializer("utf_8"),
-    "value.serializer": value_serializer
+    # "key.serializer": StringSerializer("utf_8"),
+    # "value.serializer": value_serializer
 }
 
 fake = Faker()
@@ -43,10 +45,9 @@ NETWORKS = ["wifi", "4g", "5g", "offline"]
 
 
 
-# 한 세션동안 불변의 컨텍스트
 def make_session_profile(user_id: int | None = None):
     return {
-        "user_id": user_id if user_id is not None else fake.random_int(min=1, max=5000),
+        "user_id": user_id if user_id is not None else fake.random_int(min=1, max=100),
         # "country": fake.country_code(),
         "country": "KR",
         "platform": random.choice(PLATFORMS),
@@ -55,23 +56,23 @@ def make_session_profile(user_id: int | None = None):
     }
 
 
-# 한 세션은 하나의 (wt_id, ep_id)에 묶임
 def make_content(webtoon_id: str | None = None, episode_id: str | None = None):
     return {
         "webtoon_id": webtoon_id if webtoon_id is not None else f"webtoon_{fake.random_int(min=1, max=10)}",
-        "episode_id": episode_id if episode_id is not None else f"ep_{fake.random_int(min=1, max=30)}"
+        "episode_id": episode_id if episode_id is not None else f"ep_{fake.random_int(min=1, max=20)}"
     }
 
 
 def make_base_event(session_id: str, t: datetime, profile: dict, content: dict, network: str):
     return {
+        "event_id": str(uuid.uuid4()),
         "user_id": profile["user_id"],
         "webtoon_id": content["webtoon_id"],
         "episode_id": content["episode_id"],
         "session_id": session_id,
-        "timestamp": t.astimezone(timezone.utc).isoformat(),
-        # "local_timestamp": t.astimezone(?).isoformat(timespec="seconds"),
-        "local_timestamp": t.astimezone(KST).isoformat(timespec="seconds"),
+        "utimestamptz": t.astimezone(timezone.utc).isoformat(),
+        # "local_timestamptz": t.astimezone(?).isoformat(timespec="seconds"),
+        "local_timestamptz": t.astimezone(KST).isoformat(timespec="seconds"),
         "country": profile["country"],
         "platform": profile["platform"],
         "device": profile["device"],
@@ -150,7 +151,7 @@ def build_session_events(session_id: str, profile: dict, content: dict, out_of_o
     dwell_ms += delta_ms
     t += timedelta(milliseconds=delta_ms)
 
-    is_complete = random.random() < 0.6
+    is_complete = random.random() < 0.8
     if is_complete and ratio < 1.0:
         ratio = min(1.0, max(1.0, ratio + random.uniform(0.01, 0.2)))
     
@@ -187,11 +188,12 @@ def parse_args():
 def main():
     args = parse_args()
 
-    producer = SerializingProducer(PRODUCER_CONFIG)
+    # producer = SerializingProducer(PRODUCER_CONFIG)
+    producer = Producer(PRODUCER_CONFIG)
 
     if not args.binge:
         for _ in range(args.sessions):
-            session_id = str(uuid.uuid4())
+            session_id = fake.random_int(min=1, max=10)
             profile = make_session_profile()
             content = make_content()
             
@@ -200,8 +202,10 @@ def main():
             for event in session_events:
                 producer.produce(
                     topic=KAFKA_TOPIC,
-                    key=session_id,
-                    value=event,
+                    # key=session_id,
+                    # value=event,
+                    key=str(session_id).encode("utf-8"),            # 파티션 내의 순서 보장을 위해
+                    value=json.dumps(event, ensure_ascii=False).encode("utf-8"),
                     on_delivery=delivery_report
                 )
                 producer.poll(0)                        # 콜백 처리와 I/O 처리를 위한 이벤트 루프 돌리기
@@ -223,8 +227,10 @@ def main():
             for event in session_events:
                 producer.produce(
                     topic=KAFKA_TOPIC,
-                    key=session_id,
-                    value=event,
+                    # key=session_id,
+                    # value=event,
+                    key=str(session_id).encode("utf-8"),
+                    value=json.dumps(event, ensure_ascii=False).encode("utf-8"),
                     on_delivery=delivery_report
                 )
                 producer.poll(0)

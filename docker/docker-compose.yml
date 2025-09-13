@@ -33,34 +33,45 @@ services:
       KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:29092,PLAINTEXT_HOST://localhost:9092
       KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
       KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
+      KAFKA_AUTO_CREATE_TOPICS_ENABLE: "true"
       # 단일 브로커 안정화 값
       KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
       KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
       KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
+    command:
+      - bash
+      - -c
+      - |
+        /etc/confluent/docker/run &
+        sleep 10
+        kafka-topics --bootstrap-server localhost:29092 \
+          --create --if-not-exists --topic webtoon_user_events_v2 \
+          --partitions 1 --replication-factor 1
+        wait
     healthcheck:
-      test: ["CMD-SHELL", "kafka-topics --bootstrap-server localhost:9092 --list || exit 1"]
+      test: ["CMD-SHELL", "kafka-topics --bootstrap-server localhost:29092 --list || exit 1"]
       interval: 10s
       timeout: 5s
       retries: 5
 
-  schema-registry:
-    image: confluentinc/cp-schema-registry:7.5.2
-    container_name: schema-registry
-    depends_on:
-      kafka:
-        condition: service_healthy
-    environment:
-      SCHEMA_REGISTRY_KAFKASTORE_BOOTSTRAP_SERVERS: PLAINTEXT://kafka:29092
-      SCHEMA_REGISTRY_HOST_NAME: schema-registry
-      SCHEMA_REGISTRY_LISTENERS: http://0.0.0.0:8081
-      SCHEMA_REGISTRY_KAFKASTORE_TOPIC_REPLICATION_FACTOR: "1"
-    ports:
-      - "28081:8081"
-    healthcheck:
-      test: ["CMD-SHELL", "wget -q0- http://localhost:8081/subjects || exit 1"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
+  # schema-registry:
+  #   image: confluentinc/cp-schema-registry:7.5.2
+  #   container_name: schema-registry
+  #   depends_on:
+  #     kafka:
+  #       condition: service_healthy
+  #   environment:
+  #     SCHEMA_REGISTRY_KAFKASTORE_BOOTSTRAP_SERVERS: PLAINTEXT://kafka:29092
+  #     SCHEMA_REGISTRY_HOST_NAME: schema-registry
+  #     SCHEMA_REGISTRY_LISTENERS: http://0.0.0.0:8081
+  #     SCHEMA_REGISTRY_KAFKASTORE_TOPIC_REPLICATION_FACTOR: "1"
+  #   ports:
+  #     - "28081:8081"
+  #   healthcheck:
+  #     test: ["CMD-SHELL", "curl -fsS http://127.0.0.1:8081/subjects >/dev/null || exit 1"]
+  #     interval: 10s
+  #     timeout: 5s
+  #     retries: 5
 
   kafdrop:
     image: obsidiandynamics/kafdrop:latest
@@ -74,33 +85,47 @@ services:
     environment:
       KAFKA_BROKER_CONNECT: "kafka:29092"
 
-  postgres:
-    image: postgres:14.18
-    container_name: postgres
-    environment:
-      POSTGRES_USER: byeolong2
-      POSTGRES_PASSWORD: adminadmin12
-      POSTGRES_DB: feature_store
-    ports:
-      - "5432:5432"
-    volumes:
-      - pg_data:/var/lib/postgresql/data
-    healthcheck:
-      test: ["CMD", "pg_isready", "-U", "byeolong2", "-d", "feature_store"]
-      interval: 5s
-      timeout: 3s
-      retries: 5
+  # postgres:
+  #   image: postgres:14.18
+  #   container_name: postgres
+  #   environment:
+  #     POSTGRES_USER: byeolong2
+  #     POSTGRES_PASSWORD: adminadmin12
+  #     POSTGRES_DB: wuserflow
+  #   ports:
+  #     - "5432:5432"
+  #   volumes:
+  #     - pg_data:/var/lib/postgresql/data
+  #     - ../src/db/postgres:/docker-entrypoint-initdb.d
+  #   healthcheck:
+  #     test: ["CMD", "pg_isready", "-U", "byeolong2", "-d", "wuserflow"]
+  #     interval: 5s
+  #     timeout: 3s
+  #     retries: 5
 
   spark-master:
-    image: bitnami/spark:3.5.6
+    build:
+      context: ./spark
+      dockerfile: Dockerfile
     container_name: spark-master
+    user: root                                # 컨테이너 프로세스 실행 권한 계정 (반드시 /etc/passwd에 존재하는 리눅스 계정이어야 함)
     environment:
       - SPARK_MODE=master
+      - HOME=/opt/bitnami/spark
+      - USER=spark                            # 단순 리눅스 환경변수 (실제 리눅스 계정, 컨테이너 실행 권한과 관련 X)
+      - HADOOP_USER_NAME=spark                # 내부적으로 HDFS API 호출 시, 권한 체크하는 Hadoop 계정
+      - SPARK_SUBMIT=/opt/bitnami/spark/bin/spark-submit
+      - JAVA_TOOL_OPTIONS=-Duser.name=spark   # JVM 설정. 내부적으로 자바 코드 호출 시 참조하는 사용자 계정
+      - AMZ_ACC_KEY=${AMZ_ACC_KEY_ID}
+      - AMZ_SECRET_ACC_KEY=${AMZ_SECRET_ACC_KEY}
     ports:
       - "8080:8080"     # Web UI
-      - "7077:7077"     # 클러스터 간 통신
+      - "7077:7077"     # spark 클러스터 간 통신
     volumes:
-      - ../src/spark:/app
+      - ../src:/opt/workspace/src
+      - ../.env:/opt/workspace/.env
+      - ../spark/checkpoints:/opt/workspace/checkpoints
+      - ../spark/data:/opt/workspace/data
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8080"]
       interval: 10s
@@ -108,54 +133,66 @@ services:
       retries: 5
 
   spark-worker:
-    image: bitnami/spark:3.5.6
+    build:
+      context: ./spark
+      dockerfile: Dockerfile
     container_name: spark-worker
-    environment:
-      - SPARK_MODE=worker
-      - SPARK_MASTER_URL=spark://spark-master:7077
     depends_on:
       spark-master:
         condition: service_healthy
+    user: root
+    environment:
+      - SPARK_MODE=worker
+      - SPARK_MASTER_URL=spark://spark-master:7077
+      - HOME=/opt/bitnami/spark
+      - USER=spark
+      - HADOOP_USER_NAME=spark
+      - JAVA_TOOL_OPTIONS=-Duser.name=spark
+      - AMZ_ACC_KEY=${AMZ_ACC_KEY_ID}
+      - AMZ_SECRET_ACC_KEY=${AMZ_SECRET_ACC_KEY}
     ports:
       - "8081:8081"
     volumes:
-      - ../src/spark:/app
+      - ../src:/opt/workspace/src
+      - ../.env:/opt/workspace/.env
+      - ../spark/checkpoints:/opt/workspace/checkpoints
+      - ../spark/data:/opt/workspace/data
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8081"]
       interval: 10s
       timeout: 5s
       retries: 5
 
-  airflow:
-    image: apache/airflow:2.8.4-python3.10
-    container_name: airflow
-    depends_on:
-      postgres:
-        condition: service_healthy
-    env_file:
-      - ../.env
-    environment:
-      AIRFLOW__CORE__EXECUTOR: LocalExecutor
-      AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://byeolong2:adminadmin12@postgres:5432/feature_store
-      AIRFLOW__CORE__LOAD_EXAMPLES: "False"
-    volumes:
-      - ../airflow/dags:/opt/airflow/dags
-      - ../airflow/logs:/opt/airflow/logs
-    ports:
-      - "8082:8080"
-    restart: always
-    command: >
-      bash -c "
-        airflow db init &&
-        airflow db migrate &&
-        airflow scheduler &
-        airflow webserver
-      "
-    healthcheck:
-      test: ["CMD", "curl", "--fail", "http://localhost:8080/health"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
+  # airflow:
+  #   image: apache/airflow:2.8.4-python3.10
+  #   container_name: airflow
+  #   depends_on:
+  #     postgres:
+  #       condition: service_healthy
+  #   env_file:
+  #     - ../.env
+  #   environment:
+  #     AIRFLOW__CORE__EXECUTOR: LocalExecutor
+  #     AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://byeolong2:adminadmin12@postgres:5432/feature_store
+  #     AIRFLOW__CORE__LOAD_EXAMPLES: "False"
+  #   volumes:
+  #     - ../airflow/dags:/opt/airflow/dags
+  #     - ../airflow/logs:/opt/airflow/logs
+  #   ports:
+  #     - "8082:8080"
+  #   restart: always
+  #   command: >
+  #     bash -c "
+  #       airflow db init &&
+  #       airflow db migrate &&
+  #       airflow scheduler &
+  #       airflow webserver
+  #     "
+  #   healthcheck:
+  #     test: ["CMD", "curl", "--fail", "http://localhost:8080/health"]
+  #     interval: 10s
+  #     timeout: 5s
+  #     retries: 5
 
 volumes:
   pg_data:
