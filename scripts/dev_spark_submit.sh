@@ -9,7 +9,7 @@ SPARK_APP_FILE_IN_CONTAINER="${SPARK_APP_FILE_IN_CONTAINER:-/opt/workspace/src/s
 SCRIPT_PATH="${BASH_SOURCE[0]:-$0}"
 SCRIPT_DIR="$(cd "$(dirname "$SCRIPT_PATH")" && pwd)"
 ROOT_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
-DOCKER_COMPOSE_FILE="${DOCKER_COMPOSE_FILE:-$ROOT_DIR/docker/docker-compose.yml}"
+DOCKER_COMPOSE_FILE="${DOCKER_COMPOSE_FILE:-$ROOT_DIR/docker-compose.yml}"
 ENV_FILE="$ROOT_DIR/.env"
 
 # load .env file
