@@ -105,10 +105,12 @@ services:
 
   spark-master:
     build:
-      context: ./spark
+      context: docker/spark
       dockerfile: Dockerfile
     container_name: spark-master
     user: root                                # 컨테이너 프로세스 실행 권한 계정 (반드시 /etc/passwd에 존재하는 리눅스 계정이어야 함)
+    env_file:
+      - .env
     environment:
       - SPARK_MODE=master
       - HOME=/opt/bitnami/spark
@@ -122,10 +124,10 @@ services:
       - "8080:8080"     # Web UI
       - "7077:7077"     # spark 클러스터 간 통신
     volumes:
-      - ../src:/opt/workspace/src
-      - ../.env:/opt/workspace/.env
-      - ../spark/checkpoints:/opt/workspace/checkpoints
-      - ../spark/data:/opt/workspace/data
+      - ./src:/opt/workspace/src
+      - .env:/opt/workspace/.env
+      - ./spark/checkpoints:/opt/workspace/checkpoints
+      - ./spark/data:/opt/workspace/data
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8080"]
       interval: 10s
@@ -134,13 +136,15 @@ services:
 
   spark-worker:
     build:
-      context: ./spark
+      context: docker/spark
       dockerfile: Dockerfile
     container_name: spark-worker
     depends_on:
       spark-master:
         condition: service_healthy
     user: root
+    env_file:
+      - .env
     environment:
       - SPARK_MODE=worker
       - SPARK_MASTER_URL=spark://spark-master:7077
@@ -153,10 +157,10 @@ services:
     ports:
       - "8081:8081"
     volumes:
-      - ../src:/opt/workspace/src
-      - ../.env:/opt/workspace/.env
-      - ../spark/checkpoints:/opt/workspace/checkpoints
-      - ../spark/data:/opt/workspace/data
+      - ./src:/opt/workspace/src
+      - .env:/opt/workspace/.env
+      - ./spark/checkpoints:/opt/workspace/checkpoints
+      - ./spark/data:/opt/workspace/data
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8081"]
       interval: 10s
