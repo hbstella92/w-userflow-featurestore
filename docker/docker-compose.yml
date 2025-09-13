@@ -116,6 +116,8 @@ services:
       - HADOOP_USER_NAME=spark                # 내부적으로 HDFS API 호출 시, 권한 체크하는 Hadoop 계정
       - SPARK_SUBMIT=/opt/bitnami/spark/bin/spark-submit
       - JAVA_TOOL_OPTIONS=-Duser.name=spark   # JVM 설정. 내부적으로 자바 코드 호출 시 참조하는 사용자 계정
+      - AWS_ACCESS_KEY=${AWS_ACCESS_KEY_ID}
+      - AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}
     ports:
       - "8080:8080"     # Web UI
       - "7077:7077"     # spark 클러스터 간 통신
@@ -123,7 +125,7 @@ services:
       - ../src:/opt/workspace/src
       - ../.env:/opt/workspace/.env
       - ../spark/checkpoints:/opt/workspace/checkpoints
-      - ../spark/datalake/parquet:/opt/workspace/datalake/parquet
+      - ../spark/data:/opt/workspace/data
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8080"]
       interval: 10s
@@ -152,7 +154,7 @@ services:
       - ../src:/opt/workspace/src
       - ../.env:/opt/workspace/.env
       - ../spark/checkpoints:/opt/workspace/checkpoints
-      - ../spark/datalake/parquet:/opt/workspace/datalake/parquet
+      - ../spark/data:/opt/workspace/data
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8081"]
       interval: 10s
