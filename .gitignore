@@ -11,3 +11,4 @@ spark/datalake/
 spark/checkpoints/
 
 *.pyc
+airflow/logs/
