@@ -15,3 +15,4 @@ spark/checkpoints/
 
 *.pyc
 airflow/logs/
+spark/ivy2
