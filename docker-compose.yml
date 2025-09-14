@@ -1,5 +1,9 @@
 version: "3.9"
 
+networks:
+  mynetwork:
+    driver: bridge
+
 services:
   zookeeper:
     image: confluentinc/cp-zookeeper:7.5.2
@@ -12,6 +16,8 @@ services:
       ZOOKEEPER_SYNC_LIMIT: 2
     ports:
       - "2181:2181"
+    networks:
+      - mynetwork
     healthcheck:
       test: echo ruok | nc localhost 2181
       interval: 10s
@@ -26,6 +32,8 @@ services:
         condition: service_healthy
     ports:
       - "9092:9092"
+    networks:
+      - mynetwork
     environment:
       KAFKA_BROKER_ID: 1
       KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
@@ -81,34 +89,18 @@ services:
         condition: service_healthy
     ports:
       - "9000:9000"
+    networks:
+      - mynetwork
     restart: always
     environment:
       KAFKA_BROKER_CONNECT: "kafka:29092"
 
-  # postgres:
-  #   image: postgres:14.18
-  #   container_name: postgres
-  #   environment:
-  #     POSTGRES_USER: byeolong2
-  #     POSTGRES_PASSWORD: adminadmin12
-  #     POSTGRES_DB: wuserflow
-  #   ports:
-  #     - "5432:5432"
-  #   volumes:
-  #     - pg_data:/var/lib/postgresql/data
-  #     - ../src/db/postgres:/docker-entrypoint-initdb.d
-  #   healthcheck:
-  #     test: ["CMD", "pg_isready", "-U", "byeolong2", "-d", "wuserflow"]
-  #     interval: 5s
-  #     timeout: 3s
-  #     retries: 5
-
   spark-master:
     build:
-      context: docker/spark
+      context: ./docker/spark
       dockerfile: Dockerfile
     container_name: spark-master
-    user: root                                # 컨테이너 프로세스 실행 권한 계정 (반드시 /etc/passwd에 존재하는 리눅스 계정이어야 함)
+    user: "1001:0"
     env_file:
       - .env
     environment:
@@ -123,9 +115,12 @@ services:
     ports:
       - "8080:8080"     # Web UI
       - "7077:7077"     # spark 클러스터 간 통신
+    networks:
+      - mynetwork
     volumes:
-      - ./src:/opt/workspace/src
+      - ./src/spark:/opt/workspace/src/spark
       - .env:/opt/workspace/.env
+      - spark_ivy2:/opt/bitnami/spark/.ivy2               # 의존성 jar 다운로드 하기 위한 폴더
       - ./spark/checkpoints:/opt/workspace/checkpoints
       - ./spark/data:/opt/workspace/data
     healthcheck:
@@ -136,13 +131,13 @@ services:
 
   spark-worker:
     build:
-      context: docker/spark
+      context: ./docker/spark
       dockerfile: Dockerfile
     container_name: spark-worker
+    user: "1001:0"
     depends_on:
       spark-master:
         condition: service_healthy
-    user: root
     env_file:
       - .env
     environment:
@@ -156,9 +151,12 @@ services:
       - AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}
     ports:
       - "8081:8081"
+    networks:
+      - mynetwork
     volumes:
-      - ./src:/opt/workspace/src
+      - ./src/spark:/opt/workspace/src/spark
       - .env:/opt/workspace/.env
+      - spark_ivy2:/opt/bitnami/spark/.ivy2
       - ./spark/checkpoints:/opt/workspace/checkpoints
       - ./spark/data:/opt/workspace/data
     healthcheck:
@@ -167,36 +165,96 @@ services:
       timeout: 5s
       retries: 5
 
-  # airflow:
-  #   image: apache/airflow:2.8.4-python3.10
-  #   container_name: airflow
-  #   depends_on:
-  #     postgres:
-  #       condition: service_healthy
-  #   env_file:
-  #     - ../.env
-  #   environment:
-  #     AIRFLOW__CORE__EXECUTOR: LocalExecutor
-  #     AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://byeolong2:adminadmin12@postgres:5432/feature_store
-  #     AIRFLOW__CORE__LOAD_EXAMPLES: "False"
-  #   volumes:
-  #     - ../airflow/dags:/opt/airflow/dags
-  #     - ../airflow/logs:/opt/airflow/logs
-  #   ports:
-  #     - "8082:8080"
-  #   restart: always
-  #   command: >
-  #     bash -c "
-  #       airflow db init &&
-  #       airflow db migrate &&
-  #       airflow scheduler &
-  #       airflow webserver
-  #     "
-  #   healthcheck:
-  #     test: ["CMD", "curl", "--fail", "http://localhost:8080/health"]
-  #     interval: 10s
-  #     timeout: 5s
-  #     retries: 5
+  x-airflow-common: &airflow-common
+    build:
+      context: ./docker/airflow
+      dockerfile: Dockerfile
+    env_file:
+      - .env
+    environment:
+      AIRFLOW__CORE__EXECUTOR: LocalExecutor
+      AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: ${AIRFLOW__DATABASE__SQL_ALCHEMY_CONN}
+      AIRFLOW__CORE__FERNET_KEY: ${AIRFLOW__CORE__FERNET_KEY}
+      AIRFLOW__WEBSERVER__SECRET_KEY: ${AIRFLOW__WEBSERVER__SECRET_KEY}
+      AIRFLOW__CORE__LOAD_EXAMPLES: "False"
+      AIRFLOW_UID: ${AIRFLOW_UID}
+      # For spark submit
+      SPARK_MASTER: ${SPARK_MASTER}
+      SPARK_APP_FILE_IN_CONTAINER: ${SPARK_APP_FILE_IN_CONTAINER}
+      SPARK_CHECKPOINT_DIR: ${SPARK_CHECKPOINT_DIR}
+      SPARK_PACKAGES: ${SPARK_PACKAGES}
+    networks:
+      - mynetwork
+    volumes:
+      - ./airflow/dags:/opt/airflow/dags
+      - airflow_logs:/opt/airflow/logs
+      - ./src/spark:/opt/workspace/src/spark
+      - airflow_plugins:/opt/airflow/plugins
+      - spark_ivy2:/opt/bitnami/spark/.ivy2
+
+
+  airflow-init:
+    <<: *airflow-common
+    container_name: airflow-init
+    entrypoint: /bin/bash
+    command:
+      - -c
+      - |
+        airflow db upgrade && \
+        airflow users create \
+          --username byeolong2 \
+          --firstname Hanbyeol \
+          --lastname Kim \
+          --role Admin \
+          --email hbstella92@gmail.com \
+          --password adminadmin12
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  airflow-webserver:
+    <<: *airflow-common
+    container_name: airflow-webserver
+    depends_on:
+      - postgres
+      - airflow-init
+    ports:
+      - "8088:8080"
+    restart: always
+    command: webserver
+
+  airflow-scheduler:
+    <<: *airflow-common
+    container_name: airflow-scheduler
+    depends_on:
+      - postgres
+      - airflow-init
+    restart: always
+    command: scheduler
+
+  postgres:
+    image: postgres:14
+    container_name: postgres
+    env_file:
+      - .env
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+    ports:
+      - "5432:5432"
+    networks:
+      - mynetwork
+    volumes:
+      - pg_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      retries: 5
+      interval: 10s
+      timeout: 5s
 
 volumes:
   pg_data:
+  airflow_logs:
+  airflow_plugins:
+  spark_ivy2:
