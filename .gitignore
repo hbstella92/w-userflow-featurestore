@@ -7,6 +7,7 @@ ubuntu@40.233.105.255
 
 # 로그
 airflow/logs/
+airflow/plugins/
 
 # spark
 spark/data/
