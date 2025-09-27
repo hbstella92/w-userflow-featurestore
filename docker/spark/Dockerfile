@@ -16,9 +16,9 @@ RUN mkdir -p /opt/bitnami/spark/.ivy2 && \
 
 ENV PYSPARK_PYTHON=python3.11
 ENV PYSPARK_DRIVER_PYTHON=python3.11
-ENV SPARK_LOCAL_DIRS=/opt/bitnami/spark/tmp
-ENV SPARK_CONF_DIR=/opt/bitnami/spark/conf
-ENV SPARK_LOG_DIR=/opt/bitnami/spark/logs
-ENV SPARK_PID_DIR=/opt/bitnami/spark/tmp
+# ENV SPARK_LOCAL_DIRS=/opt/bitnami/spark/tmp
+# ENV SPARK_CONF_DIR=/opt/bitnami/spark/conf
+# ENV SPARK_LOG_DIR=/opt/bitnami/spark/logs
+# ENV SPARK_PID_DIR=/opt/bitnami/spark/tmp
 
 USER 1001
