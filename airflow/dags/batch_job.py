@@ -4,21 +4,21 @@ from airflow.providers.apache.spark.operators.spark_submit import SparkSubmitOpe
 from datetime import datetime
 
 
-SPARK_APP_FILE_IN_CONTAINER = os.getenv("SPARK_APP_FILE_IN_CONTAINER")
 SPARK_MASTER = os.getenv("SPARK_MASTER")
 SPARK_PACKAGES = os.getenv("SPARK_PACKAGES")
 
 
 with DAG(
-    dag_id="spark_submit_test",
+    dag_id="batch_spark_job",
     start_date=datetime(2025, 9, 13),
-    schedule_interval=None,
+    schedule_interval="@daily",
     catchup=False
 ) as dag:
-    raw_file_load_task = SparkSubmitOperator(
-        task_id="run_spark_submit_job",
-        name="StreamingSessionJob",
-        application=f"{SPARK_APP_FILE_IN_CONTAINER}",
+    batch_completion_rate = SparkSubmitOperator(
+        task_id="completion_rate_per_episode",
+        name="BatchCompletionRatePerEpisode",
+        application="/opt/workspace/src/spark/batch_completion_rate.py",
+        application_args=["--date", "{{ ds }}"],
         conn_id="spark_default",
         packages=f"{SPARK_PACKAGES}",
         conf={
@@ -31,7 +31,7 @@ with DAG(
             "spark.sql.shuffle.partitions": "1",
             "spark.driver.extraJavaOptions": "-Duser.name=spark",
             "spark.executor.extraJavaOptions": "-Duser.name=spark",
-            "spark.executor.cores": "2",
+            "spark.executor.cores": "1",
             "spark.executor.memory": "1g",
             "spark.driver.memory": "1g",
             "spark.cores.max": "2",
@@ -45,4 +45,4 @@ with DAG(
         verbose=True
     )
 
-    raw_file_load_task
+    batch_completion_rate

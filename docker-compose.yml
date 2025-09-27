@@ -93,7 +93,9 @@ services:
       - mynetwork
     restart: always
     environment:
-      KAFKA_BROKER_CONNECT: "kafka:29092"
+      KAFKA_BROKERCONNECT: "kafka:29092"
+      SERVER_PORT: 9000
+      SERVER_ADDRESS: 0.0.0.0
 
   spark-master:
     build:
@@ -105,6 +107,7 @@ services:
       - .env
     environment:
       - SPARK_MODE=master
+      - SPARK_MASTER_WEBUI_PORT=8080
       - HOME=/opt/bitnami/spark
       - USER=spark                            # 단순 리눅스 환경변수 (실제 리눅스 계정, 컨테이너 실행 권한과 관련 X)
       - HADOOP_USER_NAME=spark                # 내부적으로 HDFS API 호출 시, 권한 체크하는 Hadoop 계정
@@ -143,6 +146,10 @@ services:
     environment:
       - SPARK_MODE=worker
       - SPARK_MASTER_URL=spark://spark-master:7077
+      - SPARK_WORKER_CORES=4
+      - SPARK_WORKER_MEMORY=4G
+      - SPARK_DRIVER_MEMORY=1G
+      - SPARK_EXECUTOR_MEMORY=1G
       - HOME=/opt/bitnami/spark
       - USER=spark
       - HADOOP_USER_NAME=spark
