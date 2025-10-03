@@ -144,12 +144,6 @@ services:
     env_file:
       - .env
     environment:
-      # - SPARK_MODE=worker
-      # - SPARK_MASTER_URL=spark://spark-master:7077
-      # - SPARK_WORKER_CORES=4
-      # - SPARK_WORKER_MEMORY=4G
-      # - SPARK_DRIVER_MEMORY=1G
-      # - SPARK_EXECUTOR_MEMORY=1G
       - HOME=/opt/spark
       - USER=spark
       - HADOOP_USER_NAME=spark
@@ -235,7 +229,6 @@ services:
       - ./src/spark:/opt/workspace/src/spark
       - airflow_plugins:/opt/airflow/plugins
       - spark_ivy2:/opt/spark/.ivy2
-
 
   airflow-init:
     <<: *airflow-common
