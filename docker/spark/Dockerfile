@@ -18,10 +18,13 @@ ENV PATH="${SPARK_HOME}/bin:${PATH}"
 ENV PYSPARK_PYTHON=python3
 ENV PYSPARK_DRIVER_PYTHON=python3
 
-RUN mkdir -p /opt/spark/.ivy2 /opt/spark/tmp && \
-    chown -R root:root /opt/spark && chmod -R 775 /opt/spark
+RUN groupadd -g 1001 spark && \
+    useradd -u 1001 -g spark -ms /bin/bash spark
 
-RUN useradd -u 1001 -ms /bin/bash spark
-USER spark
+RUN mkdir -p /opt/spark/.ivy2/cache /opt/spark/tmp && \
+    chown -R 1001:1001 /opt/spark && \
+    chmod -R 777 /opt/spark
+
+USER 1001
 
 WORKDIR /opt/spark
