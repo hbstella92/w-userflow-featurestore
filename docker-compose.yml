@@ -106,12 +106,10 @@ services:
     env_file:
       - .env
     environment:
-      - SPARK_MODE=master
-      - SPARK_MASTER_WEBUI_PORT=8080
-      - HOME=/opt/bitnami/spark
+      - HOME=/opt/spark
       - USER=spark                            # 단순 리눅스 환경변수 (실제 리눅스 계정, 컨테이너 실행 권한과 관련 X)
       - HADOOP_USER_NAME=spark                # 내부적으로 HDFS API 호출 시, 권한 체크하는 Hadoop 계정
-      - SPARK_SUBMIT=/opt/bitnami/spark/bin/spark-submit
+      - SPARK_SUBMIT=/opt/spark/bin/spark-submit
       - JAVA_TOOL_OPTIONS=-Duser.name=spark   # JVM 설정. 내부적으로 자바 코드 호출 시 참조하는 사용자 계정
       - AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}
       - AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}
@@ -123,9 +121,11 @@ services:
     volumes:
       - ./src/spark:/opt/workspace/src/spark
       - .env:/opt/workspace/.env
-      - spark_ivy2:/opt/bitnami/spark/.ivy2               # 의존성 jar 다운로드 하기 위한 폴더
+      - spark_ivy2:/opt/spark/.ivy2               # 의존성 jar 다운로드 하기 위한 폴더
       - ./spark/checkpoints:/opt/workspace/checkpoints
       - ./spark/data:/opt/workspace/data
+    command: >
+      bash -c "/opt/spark/sbin/start-master.sh && tail -f /dev/null"
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8080"]
       interval: 10s
@@ -144,13 +144,13 @@ services:
     env_file:
       - .env
     environment:
-      - SPARK_MODE=worker
-      - SPARK_MASTER_URL=spark://spark-master:7077
-      - SPARK_WORKER_CORES=4
-      - SPARK_WORKER_MEMORY=4G
-      - SPARK_DRIVER_MEMORY=1G
-      - SPARK_EXECUTOR_MEMORY=1G
-      - HOME=/opt/bitnami/spark
+      # - SPARK_MODE=worker
+      # - SPARK_MASTER_URL=spark://spark-master:7077
+      # - SPARK_WORKER_CORES=4
+      # - SPARK_WORKER_MEMORY=4G
+      # - SPARK_DRIVER_MEMORY=1G
+      # - SPARK_EXECUTOR_MEMORY=1G
+      - HOME=/opt/spark
       - USER=spark
       - HADOOP_USER_NAME=spark
       - JAVA_TOOL_OPTIONS=-Duser.name=spark
@@ -163,9 +163,53 @@ services:
     volumes:
       - ./src/spark:/opt/workspace/src/spark
       - .env:/opt/workspace/.env
-      - spark_ivy2:/opt/bitnami/spark/.ivy2
+      - spark_ivy2:/opt/spark/.ivy2
       - ./spark/checkpoints:/opt/workspace/checkpoints
       - ./spark/data:/opt/workspace/data
+    command: >
+      bash -c "/opt/spark/sbin/start-worker.sh spark://spark-master:7077 --cores 4 --memory 4G && tail -f /dev/null"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8081"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  spark-worker-2:
+    build:
+      context: ./docker/spark
+      dockerfile: Dockerfile
+    container_name: spark-worker-2
+    user: "1001:0"
+    depends_on:
+      spark-master:
+        condition: service_healthy
+    env_file:
+      - .env
+    environment:
+      # - SPARK_MODE=worker
+      # - SPARK_MASTER_URL=spark://spark-master:7077
+      # - SPARK_WORKER_CORES=4
+      # - SPARK_WORKER_MEMORY=4G
+      # - SPARK_DRIVER_MEMORY=1G
+      # - SPARK_EXECUTOR_MEMORY=1G
+      - HOME=/opt/spark
+      - USER=spark
+      - HADOOP_USER_NAME=spark
+      - JAVA_TOOL_OPTIONS=-Duser.name=spark
+      - AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}
+      - AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}
+    ports:
+      - "8082:8081"
+    networks:
+      - mynetwork
+    volumes:
+      - ./src/spark:/opt/workspace/src/spark
+      - .env:/opt/workspace/.env
+      - spark_ivy2:/opt/spark/.ivy2
+      - ./spark/checkpoints:/opt/workspace/checkpoints
+      - ./spark/data:/opt/workspace/data
+    command: >
+      bash -c "/opt/spark/sbin/start-worker.sh spark://spark-master:7077 --cores 4 --memory 4G && tail -f /dev/null"
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8081"]
       interval: 10s
@@ -187,7 +231,6 @@ services:
       AIRFLOW_UID: ${AIRFLOW_UID}
       # For spark submit
       SPARK_MASTER: ${SPARK_MASTER}
-      SPARK_APP_FILE_IN_CONTAINER: ${SPARK_APP_FILE_IN_CONTAINER}
       SPARK_CHECKPOINT_DIR: ${SPARK_CHECKPOINT_DIR}
       SPARK_PACKAGES: ${SPARK_PACKAGES}
     networks:
