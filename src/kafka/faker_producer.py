@@ -3,6 +3,7 @@ import os
 import time
 import uuid
 import random
+import pytz
 import argparse
 from datetime import datetime, timedelta, timezone
 
@@ -37,6 +38,15 @@ PRODUCER_CONFIG = {
 
 fake = Faker()
 KST = gettz("Asia/Seoul")
+COUNTRIES = ["KR", "US", "JP", "TW", "FR"]
+COUNTRY_WEIGHT = [0.3, 0.3, 0.2, 0.15, 0.05]
+COUNTRY_TZ = {
+    "KR": "Asia/Seoul",
+    "US": "America/New_York",
+    "JP": "Asia/Tokyo",
+    "TW": "Asia/Taipei",
+    "FR": "Europe/Paris"
+}
 
 PLATFORMS = ["web", "android", "ios"]
 DEVICES = ["mobile", "pc", "tablet"]
@@ -44,12 +54,15 @@ BROWSERS = ["safari", "chrome", "firefox", "edge", "whale"]
 NETWORKS = ["wifi", "4g", "5g", "offline"]
 
 
+def get_country_code(user_id: int) -> str:
+    random.seed(user_id)
+    return random.choices(COUNTRIES, weights=COUNTRY_WEIGHT, k=1)[0]
+
 
 def make_session_profile(user_id: int | None = None):
     return {
         "user_id": user_id if user_id is not None else fake.random_int(min=1, max=100),
-        # "country": fake.country_code(),
-        "country": "KR",
+        "country": get_country_code(user_id),
         "platform": random.choice(PLATFORMS),
         "device": random.choice(DEVICES),
         "browser": random.choice(BROWSERS)
@@ -64,15 +77,18 @@ def make_content(webtoon_id: str | None = None, episode_id: str | None = None):
 
 
 def make_base_event(session_id: str, t: datetime, profile: dict, content: dict, network: str):
+    tz_str = COUNTRY_TZ.get(profile["country"], "UTC")
+    local_tz = pytz.timezone(tz_str)
+    local_time = t.astimezone(local_tz).isoformat(timespec="seconds")
+
     return {
         "event_id": str(uuid.uuid4()),
         "user_id": profile["user_id"],
         "webtoon_id": content["webtoon_id"],
         "episode_id": content["episode_id"],
         "session_id": session_id,
-        "utimestamptz": t.astimezone(timezone.utc).isoformat(),
-        # "local_timestamptz": t.astimezone(?).isoformat(timespec="seconds"),
-        "local_timestamptz": t.astimezone(KST).isoformat(timespec="seconds"),
+        "utimestamptz": t.astimezone(timezone.utc).isoformat(timespec="seconds"),
+        "local_timestamptz": local_time,
         "country": profile["country"],
         "platform": profile["platform"],
         "device": profile["device"],

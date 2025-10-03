@@ -9,7 +9,7 @@ KAFKA_TOPIC = os.getenv("KAFKA_TOPIC")
 
 # SPARK_CHECKPOINT_DIR = os.getenv("SPARK_CHECKPOINT_DIR")
 SPARK_CHECKPOINT_DIR = "/tmp/"
-PARQUET_PATH = os.getenv("SPARK_PARQUET_INPUT_PATH")
+SPARK_PARQUET_SILVER_PATH = os.getenv("SPARK_PARQUET_SILVER_PATH")
 
 
 schema = StructType([
@@ -37,10 +37,13 @@ def write_to_parquet(batch_df, batch_id):
         print(f"[INFO] Batch {batch_id} input rows: {batch_df.count()}")
         batch_df.show(5, truncate=False)
 
-        batch_df.write \
-            .mode("overwrite") \
-            .partitionBy("datetime") \
-            .parquet(f"{PARQUET_PATH}")
+        # batch_df.write \
+        #     .mode("overwrite") \
+        #     .option("partitionOverwriteMode", "dynamic") \
+        #     .partitionBy("datetime") \
+        #     .parquet(f"{SPARK_PARQUET_SILVER_PATH}")
+        batch_df.writeTo("iceberg.silver.user_session_complete_or_exit") \
+            .append()
 
         print(f"[INFO] Batch {batch_id} successfully written")
     except Exception as e:
@@ -51,6 +54,9 @@ if __name__ == "__main__":
     ss = SparkSession.builder \
         .appName("StreamingSessionJob") \
         .config("spark.hadoop.fs.s3a.endpoint", "s3.amazonaws.com") \
+        .config("spark.sql.catalog.iceberg", "org.apache.iceberg.spark.SparkCatalog") \
+        .config("spark.sql.catalog.iceberg.type", "hadoop") \
+        .config("spark.sql.catalog.iceberg.warehouse", "s3a://w-userflow-featurestore/iceberg/") \
         .getOrCreate()
     ss.sparkContext.setLogLevel("WARN")
 
@@ -59,6 +65,39 @@ if __name__ == "__main__":
                "org.apache.spark.sql.execution.datasources.SQLHadoopMapReduceCommitProtocol")
     ss.conf.set("spark.sql.parquet.output.committer.class",
                "org.apache.parquet.hadoop.ParquetOutputCommitter")
+
+    ss.sql("""
+        CREATE TABLE IF NOT EXISTS iceberg.silver.user_session_complete_or_exit (
+           session_id STRING,
+           user_id INT,
+           webtoon_id STRING,
+           episode_id STRING,
+           platform STRING,
+           country STRING,
+           device STRING,
+           browser STRING,
+
+           window STRUCT<
+            start TIMESTAMP,
+            end TIMESTAMP
+           >,
+
+           start_time TIMESTAMP,
+           end_time TIMESTAMP,
+           duration_ms BIGINT,
+           max_scroll_ratio DOUBLE,
+           seen_enter BOOLEAN,
+           seen_scroll BOOLEAN,
+           seen_complete BOOLEAN,
+           seen_exit BOOLEAN,
+
+           datetime DATE,
+           is_complete INT,
+           is_exit INT
+        )
+        USING iceberg
+        PARTITIONED BY (days(datetime));
+    """)
 
     # read from kafka
     df_raw = ss.readStream \
