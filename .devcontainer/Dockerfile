@@ -9,7 +9,7 @@ RUN apt-get update && apt-get install -y \
 
 # 환경 변수 설정
 ENV JAVA_HOME=/usr/lib/jvm/java-17-openjdk-amd64
-ENV SPARK_VERSION=3.5.6
+ENV SPARK_VERSION=3.5.3
 ENV SPARK_HOME=/opt/spark
 ENV PYSPARK_PYTHON=python3
 

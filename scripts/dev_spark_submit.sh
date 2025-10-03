@@ -55,7 +55,7 @@ docker compose -f "$DOCKER_COMPOSE_FILE" exec -T "$SPARK_MASTER_CONTAINER" bash 
     \"\$SPARK_SUBMIT\" \
         --conf spark.pyspark.python=python3.11 \
         --conf spark.pyspark.driver=python3.11 \
-        --conf spark.jars.ivy=/opt/bitnami/spark/.ivy2 \
+        --conf spark.jars.ivy=/opt/spark/.ivy2 \
         --conf spark.hadoop.fs.defaultFS=file:/// \
         --conf spark.sql.catalogImplementation=in-memory \
         --conf spark.sql.shuffle.partitions=1 \

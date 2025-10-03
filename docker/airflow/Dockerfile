@@ -20,11 +20,11 @@ RUN apt-get update && apt-get install -y \
     netcat-openbsd && \
     rm -rf /var/lib/apt/lists/*
 
-COPY spark-3.5.6-bin-hadoop3.tar /tmp/
+COPY spark-3.5.3-bin-hadoop3.tar /tmp/
 
-RUN tar -xf /tmp/spark-3.5.6-bin-hadoop3.tar -C /opt/ && \
-    ln -s /opt/spark-3.5.6-bin-hadoop3 /opt/spark && \
-    rm /tmp/spark-3.5.6-bin-hadoop3.tar
+RUN tar -xf /tmp/spark-3.5.3-bin-hadoop3.tar -C /opt/ && \
+    ln -s /opt/spark-3.5.3-bin-hadoop3 /opt/spark && \
+    rm /tmp/spark-3.5.3-bin-hadoop3.tar
 
 ENV JAVA_HOME=/usr/lib/jvm/java-17-openjdk-arm64
 ENV PATH="/opt/spark/bin:${PATH}"
