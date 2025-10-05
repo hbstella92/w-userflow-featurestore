@@ -1,8 +1,11 @@
 import os
+import requests
 from airflow import DAG
 from airflow.providers.apache.spark.operators.spark_submit import SparkSubmitOperator
 from airflow.operators.python import PythonOperator
 from airflow.models import Variable
+from airflow.hooks.base import BaseHook
+from airflow.utils import timezone
 from datetime import datetime, timedelta
 
 
@@ -10,13 +13,52 @@ SPARK_MASTER = os.getenv("SPARK_MASTER")
 SPARK_PACKAGES = os.getenv("SPARK_PACKAGES")
 SPARK_PARQUET_WAREHOUSE = os.getenv("SPARK_PARQUET_WAREHOUSE")
 
+AIRFLOW__WEBSERVER__WEB_BASE_URL = os.getenv("AIRFLOW__WEBSERVER__WEB_BASE_URL")
+
+
+def slack_failure_alert(context):
+    try:
+        conn = BaseHook.get_connection("slack_webhook")
+        webhook_url = conn.password.strip()
+    except Exception as e:
+        print(f"[Slack Alert] Connection load failed : {e}")
+        return
+
+    dag_id = context["dag"].dag_id
+    task_id = context["task_instance"].task_id
+    dag_run_id = context["dag_run"].run_id
+    execution_date = context["execution_date"]
+    try_number = context["task_instance"].try_number
+
+    base_url = f"{AIRFLOW__WEBSERVER__WEB_BASE_URL}"
+    log_url = f"{base_url}/dags/{dag_id}/grid?dag_run_id={dag_run_id}&task_id={task_id}&map_index=-1&tab=logs"
+
+    kst = timezone.convert_to_timezone(execution_date, "Asia/Seoul")
+
+    message = (
+        f"🚨 *Airflow DAG Failed!*\n"
+        f"━━━━━━━━━━━━━━━━━━━━━━━\n"
+        f"DAG : `{dag_id}`\n"
+        f"Task : `{task_id}` (try {try_number})\n"
+        f"Execution Time : {kst.strftime('%Y-%m-%d %H:%M:%S')} (KST)\n"
+        f"<{log_url}|View Logs>"
+    )
+
+    try:
+        response = requests.post(
+            webhook_url, json={"text": message},
+            headers={"Content-Type": "application/json"}
+        )
+        response.raise_for_status()
+        print(f"[Slack Alert] Sent successfully: {response.text}")
+    except Exception as e:
+        print(f"[Slack Alert] Failed to send : {e}")
+
 
 default_args = {
     "depends_on_past": False,
-    "email_on_failure": True,
-    "email": ["hbstella92@gmail.com"],
-    "retries": 2,
-    "retry_delay": timedelta(minutes=5)
+    "retries": 0,
+    "on_failure_callback": slack_failure_alert
 }
 
 
