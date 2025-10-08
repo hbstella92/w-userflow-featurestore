@@ -8,6 +8,13 @@ from datetime import datetime
 SPARK_PARQUET_WAREHOUSE = os.getenv("SPARK_PARQUET_WAREHOUSE")
 
 
+def to_int_or_none(x):
+    try:
+        return int(x) if x not in (None, "", "None") else None
+    except ValueError:
+        return None
+
+
 if __name__ == "__main__":
     ss = SparkSession.builder \
         .appName("SilverUserSessionEventsJob") \
@@ -50,17 +57,37 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--date", required=True)
     parser.add_argument("--start_snapshot_id", required=False)
+    parser.add_argument("--end_snapshot_id", required=True)
     args = parser.parse_args()
 
-    # incremental read
-    reader = ss.read.format("iceberg")
-    if args.start_snapshot_id:
-        reader = reader.option("start-snapshot-id", args.start_snapshot_id)
+    start_snapshot_id = to_int_or_none(args.start_snapshot_id)
+    end_snapshot_id = to_int_or_none(args.end_snapshot_id)
+    print(f"[START SNAPSHOT ID]\n{start_snapshot_id}")
+    print(f"[END SNAPSHOT ID]\n{end_snapshot_id}")
 
-    bronze_df = reader.load("iceberg.bronze.webtoon_user_events_raw") \
+    if end_snapshot_id is None:
+        raise ValueError("end_snapshot_id must be provided!")
+
+    # incremental read
+    try:
+        reader = ss.read.format("iceberg")
+
+        if start_snapshot_id:
+            reader = reader.option("start-snapshot-id", str(start_snapshot_id)) \
+                            .option("end-snapshot-id", str(end_snapshot_id))
+
+        bronze_df = reader.load("iceberg.bronze.webtoon_user_events_raw") \
+                            .filter(col("datetime") == args.date)
+
+        raw_count = bronze_df.count()
+        print(f"Raw count : {raw_count}")
+    except Exception as e:
+        print(f"[WARN] Snapshot lineage mismatch detected : {e}")
+        bronze_df = ss.read.table("iceberg.bronze.webtoon_user_events_raw") \
                         .filter(col("datetime") == args.date)
-    raw_count = bronze_df.count()
-    print(f"Raw count : {raw_count}")
+
+        raw_count = bronze_df.count()
+        print(f"Raw count : {raw_count}")
 
     # transformation
     bronze_df = bronze_df \
@@ -117,4 +144,4 @@ if __name__ == "__main__":
 
     query = windowed_df \
         .writeTo("iceberg.silver.webtoon_user_session_events") \
-        .append()
+        .overwritePartitions()
