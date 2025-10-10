@@ -33,6 +33,7 @@ if __name__ == "__main__":
            device STRING,
            browser STRING,
            datetime DATE,
+
            window STRUCT<
             start TIMESTAMP,
             end TIMESTAMP
@@ -40,13 +41,14 @@ if __name__ == "__main__":
            start_time TIMESTAMP,
            end_time TIMESTAMP,
            duration_ms BIGINT,
-           avg_scroll_ratio DOUBLE,
            max_scroll_ratio DOUBLE,
+
            seen_enter BOOLEAN,
            seen_scroll BOOLEAN,
            seen_complete BOOLEAN,
            seen_exit BOOLEAN,
            
+           session_state STRING,
            is_complete INT,
            is_exit INT
         )
@@ -69,25 +71,19 @@ if __name__ == "__main__":
         raise ValueError("end_snapshot_id must be provided!")
 
     # incremental read
-    try:
-        reader = ss.read.format("iceberg")
+    reader = ss.read.format("iceberg")
 
-        if start_snapshot_id:
-            reader = reader.option("start-snapshot-id", str(start_snapshot_id)) \
-                            .option("end-snapshot-id", str(end_snapshot_id))
+    if start_snapshot_id:
+        reader = reader.option("start-snapshot-id", str(start_snapshot_id)) \
+                        .option("end-snapshot-id", str(end_snapshot_id))
+    else:
+        print("[INFO] No start_snapshot_id provided -> full read!")
 
-        bronze_df = reader.load("iceberg.bronze.webtoon_user_events_raw") \
-                            .filter(col("datetime") == args.date)
+    bronze_df = reader.load("iceberg.bronze.webtoon_user_events_raw") \
+                        .filter(col("datetime") == to_date(lit(args.date)))
 
-        raw_count = bronze_df.count()
-        print(f"Raw count : {raw_count}")
-    except Exception as e:
-        print(f"[WARN] Snapshot lineage mismatch detected : {e}")
-        bronze_df = ss.read.table("iceberg.bronze.webtoon_user_events_raw") \
-                        .filter(col("datetime") == args.date)
-
-        raw_count = bronze_df.count()
-        print(f"Raw count : {raw_count}")
+    raw_count = bronze_df.count()
+    print(f"Raw count : {raw_count}")
 
     # transformation
     bronze_df = bronze_df \
@@ -121,27 +117,38 @@ if __name__ == "__main__":
     windowed_df = bronze_df.groupBy("session_id", "user_id", "webtoon_id", "episode_id",
                                     "platform", "country", "device", "browser",
                                     "datetime",
-                                    window("utimestamptz", "30 seconds").alias("window")) \
+                                    session_window("utimestamptz", "5 minutes").alias("window")) \
                             .agg(
                                 min("utimestamptz").alias("start_time"),
                                 max("utimestamptz").alias("end_time"),
                                 max("dwell_time_ms").alias("duration_ms"),
-                                avg("scroll_ratio").alias("avg_scroll_ratio"),
                                 max("scroll_ratio").alias("max_scroll_ratio"),
-                                max(col("event_type") == "enter").alias("seen_enter"),
-                                max(col("event_type") == "scroll").alias("seen_scroll"),
-                                max(col("event_type") == "complete").alias("seen_complete"),
-                                max(col("event_type") == "exit").alias("seen_exit")
-                            ) \
-                            .withColumn("is_complete",
-                                        (col("seen_enter") & col("seen_scroll") & col("seen_complete") & (col("max_scroll_ratio") >= 1.0) & (unix_timestamp("end_time") - unix_timestamp("start_time") <= 300)).cast("int")
-                            ) \
-                            .withColumn("is_exit",
-                                        (col("seen_enter") & col("seen_scroll") & col("seen_exit") & (col("max_scroll_ratio") < 1.0) & (unix_timestamp("end_time") - unix_timestamp("start_time") >= 600)).cast("int")
+                                max(when(col("event_type") == "enter", True).otherwise(False)).alias("seen_enter"),
+                                max(when(col("event_type") == "scroll", True).otherwise(False)).alias("seen_scroll"),
+                                max(when(col("event_type") == "complete", True).otherwise(False)).alias("seen_complete"),
+                                max(when(col("event_type") == "exit", True).otherwise(False)).alias("seen_exit")
                             )
+
+    windowed_df = windowed_df.withColumn(
+                    "session_state",
+                    when(col("seen_complete") &
+                        (col("max_scroll_ratio") >= 0.95),
+                        lit("COMPLETE")
+                    ).when(
+                        col("seen_exit") &
+                        (col("max_scroll_ratio") < 0.95),
+                        lit("EXIT")
+                    ).when(
+                        unix_timestamp(current_timestamp()) - unix_timestamp("end_time") > 1800,
+                        lit("TIMEOUT_EXIT")
+                    ).otherwise(lit("IN_PROGRESS"))
+                )
+    windowed_df = windowed_df \
+                    .withColumn("is_complete", when(col("session_state") == "COMPLETE", 1).otherwise(0)) \
+                    .withColumn("is_exit", when(col("session_state").isin("EXIT", "TIMEOUT_EXIT"), 1).otherwise(0))
     
     windowed_df.show(20, truncate=False)
 
     query = windowed_df \
         .writeTo("iceberg.silver.webtoon_user_session_events") \
-        .overwritePartitions()
+        .append()

@@ -54,6 +54,7 @@ with DAG(
             # "spark.sql.catalog.iceberg.type": "hive",
             # "spark.sql.catalog.iceberg.uri": "thrift://localhost:9083",
             "spark.sql.catalog.iceberg.warehouse": f"{SPARK_PARQUET_WAREHOUSE}",
+            "spark.sql.extensions": "org.apache.iceberg.spark.extensions.IcebergSparkSessionExtensions"
         },
         verbose=True
     )

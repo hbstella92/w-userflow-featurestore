@@ -33,11 +33,11 @@ raw_event_schema = StructType([
 
 if __name__ == "__main__":
     ss = SparkSession.builder \
-        .appName("BronzeLoadRawDataJob") \
-        .config("spark.sql.catalog.iceberg", "org.apache.iceberg.spark.SparkCatalog") \
-        .config("spark.sql.catalog.iceberg.type", "hadoop") \
-        .config("spark.sql.catalog.iceberg.warehouse", f"{SPARK_PARQUET_WAREHOUSE}") \
-        .getOrCreate()
+                    .appName("BronzeLoadRawDataJob") \
+                    .config("spark.sql.catalog.iceberg", "org.apache.iceberg.spark.SparkCatalog") \
+                    .config("spark.sql.catalog.iceberg.type", "hadoop") \
+                    .config("spark.sql.catalog.iceberg.warehouse", f"{SPARK_PARQUET_WAREHOUSE}") \
+                    .getOrCreate()
     
     ss.sparkContext.setLogLevel("WARN")
 
@@ -66,13 +66,13 @@ if __name__ == "__main__":
     """)
 
     raw_df = ss.readStream \
-        .format("kafka") \
-        .option("kafka.bootstrap.servers", KAFKA_BOOTSTRAP_SERVERS) \
-        .option("subscribe", KAFKA_TOPIC) \
-        .option("startingOffsets", "latest") \
-        .option("maxOffsetsPerTrigger", "5000") \
-        .option("failOnDataLoss", "false") \
-        .load()
+                .format("kafka") \
+                .option("kafka.bootstrap.servers", KAFKA_BOOTSTRAP_SERVERS) \
+                .option("subscribe", KAFKA_TOPIC) \
+                .option("startingOffsets", "latest") \
+                .option("maxOffsetsPerTrigger", "5000") \
+                .option("failOnDataLoss", "false") \
+                .load()
     
     json_df = raw_df.selectExpr("CAST(value AS STRING) as json_str")
     df = json_df.select(from_json(col("json_str"), raw_event_schema).alias("data")).select("data.*")
@@ -80,9 +80,9 @@ if __name__ == "__main__":
     bronze_df = df.withColumn("datetime", to_date(col("utimestamptz")))
 
     query = bronze_df.writeStream \
-        .format("iceberg") \
-        .outputMode("append") \
-        .option("checkpointLocation", f"{SPARK_CHECKPOINT_DIR}/bronze/1") \
-        .toTable("iceberg.bronze.webtoon_user_events_raw")
+                    .format("iceberg") \
+                    .outputMode("append") \
+                    .option("checkpointLocation", f"{SPARK_CHECKPOINT_DIR}/bronze/1") \
+                    .toTable("iceberg.bronze.webtoon_user_events_raw")
     
     query.awaitTermination()

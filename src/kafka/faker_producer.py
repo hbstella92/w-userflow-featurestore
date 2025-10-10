@@ -147,27 +147,29 @@ def build_session_events(session_id: str, profile: dict, content: dict, out_of_o
     count = 0
     dwell_ms = 0
 
-    for i in range(n_scrolls):
-        if random.random() < 0.1:
-            network = random.choice(NETWORKS)
+    is_complete = random.random() < 0.7
+    max_ratio_limit = 1.0 if is_complete else random.uniform(0.6, 0.9)
 
+    for i in range(n_scrolls):
         delta_ms = fake.random_int(min=500, max=5000)
         dwell_ms += delta_ms
         t += timedelta(milliseconds=delta_ms)
 
-        ratio = min(1.0, ratio + random.uniform(0.05, 0.25))
+        ratio = min(max_ratio_limit, ratio + random.uniform(0.05, 0.25))
         count += 1
 
         scroll_event = make_scroll_event(session_id, t, profile, content, network,
                                          ratio, count, dwell_ms)
         events.append(scroll_event)
 
+        if not is_complete and ratio >= max_ratio_limit * random.uniform(0.9, 1.0):
+            break
+
     # 3) COMPLETE 혹은 EXIT
     delta_ms = fake.random_int(min=500, max=5000)
     dwell_ms += delta_ms
     t += timedelta(milliseconds=delta_ms)
 
-    is_complete = random.random() < 0.8
     if is_complete and ratio < 1.0:
         ratio = min(1.0, max(1.0, ratio + random.uniform(0.01, 0.2)))
     
@@ -209,7 +211,7 @@ def main():
 
     if not args.binge:
         for _ in range(args.sessions):
-            session_id = fake.random_int(min=1, max=10)
+            session_id = str(uuid.uuid4())
             profile = make_session_profile()
             content = make_content()
             
@@ -220,11 +222,11 @@ def main():
                     topic=KAFKA_TOPIC,
                     # key=session_id,
                     # value=event,
-                    key=str(session_id).encode("utf-8"),            # 파티션 내의 순서 보장을 위해
+                    key=session_id.encode("utf-8"),            # 파티션 내의 순서 보장을 위해
                     value=json.dumps(event, ensure_ascii=False).encode("utf-8"),
                     on_delivery=delivery_report
                 )
-                producer.poll(0)                        # 콜백 처리와 I/O 처리를 위한 이벤트 루프 돌리기
+                producer.poll(0.01)                        # 콜백 처리와 I/O 처리를 위한 이벤트 루프 돌리기
                 time.sleep(SLEEP_BETWEEN_EVENTS)
         
         producer.flush()                                # 큐에 남은 메세지를 모두 전송 완료할 때까지 대기 (유실 없이 마무리하기 위함)

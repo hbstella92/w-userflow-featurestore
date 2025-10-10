@@ -10,6 +10,9 @@ from pendulum import timezone
 from datetime import datetime
 
 
+kst = timezone("Asia/Seoul")
+
+
 SPARK_MASTER = os.getenv("SPARK_MASTER")
 SPARK_PACKAGES = os.getenv("SPARK_PACKAGES")
 SPARK_PARQUET_WAREHOUSE = os.getenv("SPARK_PARQUET_WAREHOUSE")
@@ -34,14 +37,14 @@ def slack_failure_alert(context):
     base_url = f"{AIRFLOW__WEBSERVER__WEB_BASE_URL}"
     log_url = f"{base_url}/dags/{dag_id}/grid?dag_run_id={dag_run_id}&task_id={task_id}&map_index=-1&tab=logs"
 
-    kst = execution_date.astimezone(timezone("Asia/Seoul"))
+    kst_time = execution_date.in_timezone(kst)
 
     message = (
         f"🚨 *Airflow DAG Failed!*\n"
         f"━━━━━━━━━━━━━━━━━━━━━━━\n"
         f"DAG : `{dag_id}`\n"
         f"Task : `{task_id}` (try {try_number})\n"
-        f"Execution Time : {kst.strftime('%Y-%m-%d %H:%M:%S')} (KST)\n"
+        f"Execution Time : {kst_time.strftime('%Y-%m-%d %H:%M:%S')} (KST)\n"
         f"<{log_url}|View Logs>"
     )
 
@@ -84,11 +87,11 @@ def get_snapshot_id(**context):
     from pyspark.sql import SparkSession
 
     ss = SparkSession.builder \
-        .config("spark.jars.packages", f"{SPARK_PACKAGES}") \
-        .config("spark.sql.catalog.iceberg", "org.apache.iceberg.spark.SparkCatalog") \
-        .config("spark.sql.catalog.iceberg.type", "hadoop") \
-        .config("spark.sql.catalog.iceberg.warehouse", f"{SPARK_PARQUET_WAREHOUSE}") \
-        .getOrCreate()
+                    .config("spark.jars.packages", f"{SPARK_PACKAGES}") \
+                    .config("spark.sql.catalog.iceberg", "org.apache.iceberg.spark.SparkCatalog") \
+                    .config("spark.sql.catalog.iceberg.type", "hadoop") \
+                    .config("spark.sql.catalog.iceberg.warehouse", f"{SPARK_PARQUET_WAREHOUSE}") \
+                    .getOrCreate()
     
     snapshot_df = ss.sql("""
         SELECT snapshot_id
@@ -130,7 +133,7 @@ with DAG(
         "retries": 0
     },
     schedule_interval="*/5 * * * *",
-    start_date=datetime(2025, 9, 28),
+    start_date=datetime(2025, 9, 28, tzinfo=kst),
     catchup=False,
     max_active_runs=1,
     concurrency=1,
@@ -183,7 +186,8 @@ with DAG(
             "spark.sql.catalog.iceberg.type": "hadoop",
             # "spark.sql.catalog.iceberg.type": "hive",
             # "spark.sql.catalog.iceberg.uri": "thrift://localhost:9083",
-            "spark.sql.catalog.iceberg.warehouse": f"{SPARK_PARQUET_WAREHOUSE}"
+            "spark.sql.catalog.iceberg.warehouse": f"{SPARK_PARQUET_WAREHOUSE}",
+            "spark.sql.extensions": "org.apache.iceberg.spark.extensions.IcebergSparkSessionExtensions"
         },
         verbose=True
     )
