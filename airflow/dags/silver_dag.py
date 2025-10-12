@@ -132,7 +132,7 @@ with DAG(
         "depends_on_past": False,
         "retries": 0
     },
-    schedule_interval="*/5 * * * *",
+    schedule_interval="*/10 * * * *",
     start_date=datetime(2025, 9, 28, tzinfo=kst),
     catchup=False,
     max_active_runs=1,

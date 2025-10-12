@@ -171,7 +171,7 @@ def build_session_events(session_id: str, profile: dict, content: dict, out_of_o
     t += timedelta(milliseconds=delta_ms)
 
     if is_complete and ratio < 1.0:
-        ratio = min(1.0, max(1.0, ratio + random.uniform(0.01, 0.2)))
+        ratio = min(1.0, ratio + random.uniform(0.01, 0.2))
     
     terminate_event = make_terminate_event(session_id, t, profile, content, network,
                                            is_complete, ratio, count, dwell_ms)

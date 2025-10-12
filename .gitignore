@@ -1,6 +1,7 @@
 # 환경설정 파일
 .env
 ubuntu@40.233.105.255
+ubuntu@140.238.144.177
 
 # 가상환경
 .venv
@@ -14,4 +15,4 @@ spark/data/
 spark/checkpoints/
 
 *.pyc
-airflow/logs/
+*.tar

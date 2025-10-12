@@ -1,37 +1,58 @@
 import os
+import logging
 from airflow import DAG
-from airflow.sensors.external_task import ExternalTaskSensor
+from airflow.providers.amazon.aws.hooks.s3 import S3Hook
 from airflow.providers.apache.spark.operators.spark_submit import SparkSubmitOperator
+from airflow.operators.python import PythonOperator
 from datetime import datetime, timedelta
 from pendulum import timezone
 
 
 kst = timezone("Asia/Seoul")
+TOTAL_FILE_COUNT_PER_DAILY = 20
+# TOTAL_FILE_COUNT_PER_DAILY = 144
 
 
 SPARK_PACKAGES = os.getenv("SPARK_PACKAGES")
 SPARK_PARQUET_WAREHOUSE = os.getenv("SPARK_PARQUET_WAREHOUSE")
 
 
+def check_silver_file_count(**context):
+    prefix = f"iceberg/silver/webtoon_user_session_events/data/datetime_day={context['ds']}/"
+
+    s3 = S3Hook(aws_conn_id="aws_default")
+    files = s3.list_keys(bucket_name="w-userflow-featurestore", prefix=prefix)
+
+    if not files:
+        raise ValueError(f"No files under prefix : {prefix}")
+
+    parquet_files = [f for f in files if f.endswith('.parquet')]
+    count = len(parquet_files)
+
+    logging.info(f"Found {count} parquet files under {prefix}")
+
+    if count < TOTAL_FILE_COUNT_PER_DAILY:
+        raise ValueError(f"Only {count}/{TOTAL_FILE_COUNT_PER_DAILY} parquet files found for {context['ds']} - silver not complete yet!")
+
+
 with DAG(
     dag_id="gold_webtoon_episode_level_daily",
-    # schedule_interval="*/10 * * * *",
-    schedule_interval=None,
-    start_date=datetime(2025, 10, 6, tzinfo=kst),
+    start_date=datetime(2025, 10, 12, tzinfo=kst),
+    schedule_interval="@daily",
     max_active_runs=1,
     concurrency=1,
     catchup=False,
-    tags=["gold", "featurestore", "daily"]
+    default_args={
+        "retries": 1,
+        "retry_delay": timedelta(minutes=5)
+    },
+    tags=["gold", "offline", "featurestore", "daily"]
 ) as dag:
-    # wait_for_silver_task = ExternalTaskSensor(
-    #     task_id="wait_for_silver_task",
-    #     external_dag_id="silver_user_session_events",
-    #     external_task_id="update_snapshot_id",
-    #     # execution_delta=timedelta(hours=3),
-    #     mode="poke",
-    #     poke_interval=60,
-    #     timeout=3600
-    # )
+    check_silver_data = PythonOperator(
+        task_id="check_silver_data",
+        python_callable=check_silver_file_count,
+        provide_context=True
+    )
 
     gold_content_daily_task = SparkSubmitOperator(
         task_id="gold_content_daily_task",
@@ -39,7 +60,7 @@ with DAG(
         conn_id="spark_default",
         packages=f"{SPARK_PACKAGES}",
         application_args=[
-            # "--snapshot_date", "{{ macros.ds_add(ds, -1) }}"
+            # "--snapshot_date", "{{ macros.ds_add(ds, -1) }}",
             "--snapshot_date", "{{ ds }}"
         ],
         conf={
@@ -76,8 +97,8 @@ with DAG(
             # "spark.sql.catalog.iceberg.uri": "thrift://localhost:9083",
             "spark.sql.catalog.iceberg.warehouse": f"{SPARK_PARQUET_WAREHOUSE}",
             "spark.sql.extensions": "org.apache.iceberg.spark.extensions.IcebergSparkSessionExtensions"
-        }
+        },
+        verbose=True
     )
 
-    # wait_for_silver_task >> gold_content_daily_task
-    gold_content_daily_task
+    check_silver_data >> gold_content_daily_task
