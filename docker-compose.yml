@@ -109,6 +109,7 @@ services:
       context: ./docker/spark
       dockerfile: Dockerfile
     container_name: spark-master
+    hostname: spark-master
     user: "1001:1001"
     env_file:
       - .env
@@ -132,7 +133,8 @@ services:
       - ./spark/checkpoints:/opt/workspace/checkpoints
       - ./spark/data:/opt/workspace/data
     command: >
-      bash -c "/opt/spark/sbin/start-master.sh && tail -f /dev/null"
+      bash -c "/opt/spark/bin/spark-class org.apache.spark.deploy.master.Master
+      --host 0.0.0.0 --port 7077 --webui-port 8080"
     deploy:
       resources:
         limits:
@@ -149,6 +151,7 @@ services:
       context: ./docker/spark
       dockerfile: Dockerfile
     container_name: spark-worker
+    hostname: spark-worker
     user: "1001:1001"
     depends_on:
       spark-master:
@@ -173,7 +176,8 @@ services:
       - ./spark/checkpoints:/opt/workspace/checkpoints
       - ./spark/data:/opt/workspace/data
     command: >
-      bash -c "/opt/spark/sbin/start-worker.sh spark://spark-master:7077 --cores 2 --memory 14G && tail -f /dev/null"
+      bash -c "/opt/spark/bin/spark-class org.apache.spark.deploy.worker.Worker
+      spark://spark-master:7077 --host 0.0.0.0 --webui-port 8081 --cores 2 --memory 14G"
     deploy:
       resources:
         limits:
@@ -190,6 +194,7 @@ services:
       context: ./docker/spark
       dockerfile: Dockerfile
     container_name: spark-worker-2
+    hostname: spark-worker-2
     user: "1001:1001"
     depends_on:
       spark-master:
@@ -214,7 +219,8 @@ services:
       - ./spark/checkpoints:/opt/workspace/checkpoints
       - ./spark/data:/opt/workspace/data
     command: >
-      bash -c "/opt/spark/sbin/start-worker.sh spark://spark-master:7077 --cores 2 --memory 8G && tail -f /dev/null"
+      bash -c "/opt/spark/bin/spark-class org.apache.spark.deploy.worker.Worker
+      spark://spark-master:7077 --host 0.0.0.0 --webui-port 8081 --cores 2 --memory 8G"
     deploy:
       resources:
         limits:
@@ -242,7 +248,7 @@ services:
       TZ: Asia/Seoul
       AIRFLOW__CORE__LOAD_EXAMPLES: "False"
       AIRFLOW_UID: ${AIRFLOW_UID}
-      AIRFLOW_ACCESS_KEY_ID: ${AIRFLOW_ACCESS_KEY_ID}
+      AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID}
       AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY}
       AWS_DEFAULT_REGION: ap-northeast-2
       # For spark submit
