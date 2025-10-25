@@ -26,7 +26,7 @@ RUN tar -xf /tmp/spark-3.5.3-bin-hadoop3.tar -C /opt/ && \
     ln -s /opt/spark-3.5.3-bin-hadoop3 /opt/spark && \
     rm /tmp/spark-3.5.3-bin-hadoop3.tar
 
-ENV JAVA_HOME=/usr/lib/jvm/java-17-openjdk-arm64
-ENV PATH="/opt/spark/bin:${PATH}"
+ENV JAVA_HOME=/usr/lib/jvm/java-17-openjdk-amd64
+ENV PATH="${JAVA_HOME}/bin:/opt/spark/bin:${PATH}"
 
 USER airflow
