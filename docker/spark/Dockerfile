@@ -9,9 +9,10 @@ RUN apt-get update && \
     apt-get install -y --no-install-recommends curl bash python3 python3-pip && \
     apt-get clean && rm -rf /var/lib/apt/lists/*
 
-RUN curl -sL https://archive.apache.org/dist/spark/spark-${SPARK_VERSION}/spark-${SPARK_VERSION}-bin-hadoop${HADOOP_VERSION}.tgz \
-    | tar -xz -C /opt/ && \
-    mv /opt/spark-${SPARK_VERSION}-bin-hadoop${HADOOP_VERSION} /opt/spark
+COPY spark-${SPARK_VERSION}-bin-hadoop${HADOOP_VERSION}.tar /tmp/
+RUN tar -xf /tmp/spark-${SPARK_VERSION}-bin-hadoop${HADOOP_VERSION}.tar -C /opt/ && \
+    mv /opt/spark-${SPARK_VERSION}-bin-hadoop${HADOOP_VERSION} /opt/spark && \
+    rm /tmp/spark-${SPARK_VERSION}-bin-hadoop${HADOOP_VERSION}.tar
 
 ENV SPARK_HOME=/opt/spark
 ENV PATH="${SPARK_HOME}/bin:${PATH}"
@@ -19,9 +20,8 @@ ENV PYSPARK_PYTHON=python3
 ENV PYSPARK_DRIVER_PYTHON=python3
 
 RUN groupadd -g 1001 spark && \
-    useradd -u 1001 -g spark -ms /bin/bash spark
-
-RUN mkdir -p /opt/spark/.ivy2/cache /opt/spark/tmp && \
+    useradd -u 1001 -g spark -ms /bin/bash spark && \
+    mkdir -p /opt/spark/.ivy2/cache /opt/spark/tmp && \
     chown -R 1001:1001 /opt/spark && \
     chmod -R 777 /opt/spark
 

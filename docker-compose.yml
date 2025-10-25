@@ -46,6 +46,13 @@ services:
       KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
       KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
       KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
+      # Retension 설정 넣기
+      KAFKA_LOG_DIRS: /var/lib/kafka/data
+      KAFKA_LOG_RETENTION_HOURS: 24
+      KAFKA_LOG_RETENTION_BYTES: 1073741824
+      KAFKA_LOG_CLEANUP_POLICY: delete
+      KAFKA_LOG_SEGMENT_BYTES: 134217728
+      KAFKA_LOG_CLEANER_ENABLE: "true"
     command:
       - bash
       - -c
@@ -126,6 +133,11 @@ services:
       - ./spark/data:/opt/workspace/data
     command: >
       bash -c "/opt/spark/sbin/start-master.sh && tail -f /dev/null"
+    deploy:
+      resources:
+        limits:
+          cpus: "0.5"
+          memory: 1G
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8080"]
       interval: 10s
@@ -161,7 +173,12 @@ services:
       - ./spark/checkpoints:/opt/workspace/checkpoints
       - ./spark/data:/opt/workspace/data
     command: >
-      bash -c "/opt/spark/sbin/start-worker.sh spark://spark-master:7077 --cores 4 --memory 4G && tail -f /dev/null"
+      bash -c "/opt/spark/sbin/start-worker.sh spark://spark-master:7077 --cores 2 --memory 14G && tail -f /dev/null"
+    deploy:
+      resources:
+        limits:
+          cpus: "2"
+          memory: 14G
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8081"]
       interval: 10s
@@ -197,7 +214,12 @@ services:
       - ./spark/checkpoints:/opt/workspace/checkpoints
       - ./spark/data:/opt/workspace/data
     command: >
-      bash -c "/opt/spark/sbin/start-worker.sh spark://spark-master:7077 --cores 4 --memory 4G && tail -f /dev/null"
+      bash -c "/opt/spark/sbin/start-worker.sh spark://spark-master:7077 --cores 2 --memory 8G && tail -f /dev/null"
+    deploy:
+      resources:
+        limits:
+          cpus: "2"
+          memory: 8G
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8081"]
       interval: 10s
@@ -215,8 +237,14 @@ services:
       AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: ${AIRFLOW__DATABASE__SQL_ALCHEMY_CONN}
       AIRFLOW__CORE__FERNET_KEY: ${AIRFLOW__CORE__FERNET_KEY}
       AIRFLOW__WEBSERVER__SECRET_KEY: ${AIRFLOW__WEBSERVER__SECRET_KEY}
+      AIRFLOW__WEBSERVER__WEB_SERVER_BASE_URL: "${AIRFLOW__WEBSERVER__WEB_BASE_URL}"
+      AIRFLOW__CORE__DEFAULT_TIMEZONE: Asia/Seoul
+      TZ: Asia/Seoul
       AIRFLOW__CORE__LOAD_EXAMPLES: "False"
       AIRFLOW_UID: ${AIRFLOW_UID}
+      AIRFLOW_ACCESS_KEY_ID: ${AIRFLOW_ACCESS_KEY_ID}
+      AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY}
+      AWS_DEFAULT_REGION: ap-northeast-2
       # For spark submit
       SPARK_MASTER: ${SPARK_MASTER}
       SPARK_CHECKPOINT_DIR: ${SPARK_CHECKPOINT_DIR}
