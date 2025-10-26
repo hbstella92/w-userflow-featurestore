@@ -177,12 +177,12 @@ services:
       - ./spark/data:/opt/workspace/data
     command: >
       bash -c "/opt/spark/bin/spark-class org.apache.spark.deploy.worker.Worker
-      spark://spark-master:7077 --host 0.0.0.0 --webui-port 8081 --cores 2 --memory 14G"
+      --host 0.0.0.0 --webui-port 8081 --cores 2 --memory 16G spark://spark-master:7077"
     deploy:
       resources:
         limits:
           cpus: "2"
-          memory: 14G
+          memory: 16G
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8081"]
       interval: 10s
@@ -220,12 +220,54 @@ services:
       - ./spark/data:/opt/workspace/data
     command: >
       bash -c "/opt/spark/bin/spark-class org.apache.spark.deploy.worker.Worker
-      spark://spark-master:7077 --host 0.0.0.0 --webui-port 8081 --cores 2 --memory 8G"
+      --host 0.0.0.0 --webui-port 8081 --cores 2 --memory 8G spark://spark-master:7077"
     deploy:
       resources:
         limits:
           cpus: "2"
           memory: 8G
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8081"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+  spark-worker-3:         # gold task 전용
+    build:
+      context: ./docker/spark
+      dockerfile: Dockerfile
+    container_name: spark-worker-3
+    hostname: spark-worker-3
+    user: "1001:1001"
+    depends_on:
+      spark-master:
+        condition: service_healthy
+    env_file:
+      - .env
+    environment:
+      - HOME=/opt/spark
+      - USER=spark
+      - HADOOP_USER_NAME=spark
+      - JAVA_TOOL_OPTIONS=-Duser.name=spark
+      - AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}
+      - AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}
+    ports:
+      - "8083:8081"
+    networks:
+      - mynetwork
+    volumes:
+      - ./src/spark:/opt/workspace/src/spark
+      - .env:/opt/workspace/.env
+      - spark_ivy2:/opt/spark/.ivy2
+      - ./spark/checkpoints:/opt/workspace/checkpoints
+      - ./spark/data:/opt/workspace/data
+    command: >
+        bash -c "/opt/spark/bin/spark-class org.apache.spark.deploy.worker.Worker
+        --host 0.0.0.0 --webui-port 8081 --cores 2 --memory 16G spark://spark-master:7077"
+    deploy:
+      resources:
+        limits:
+          cpus: "2"
+          memory: "16G"
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8081"]
       interval: 10s
