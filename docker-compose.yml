@@ -367,6 +367,21 @@ services:
       interval: 10s
       timeout: 5s
 
+  dbt:
+    build:
+      context: ./docker/dbt
+      dockerfile: Dockerfile
+    container_name: dbt
+    depends_on:
+      - spark-master
+    environment:
+      - DBT_PROFILES_DIR=/opt/dbt/w_userflow_featurestore
+    volumes:
+      - ./dbt/w_userflow_featurestore:/opt/dbt/w_userflow_featurestore
+    command: tail -f /dev/null        # 단순히 켜둔 상태를 유지하기 위함!
+    networks:
+      - mynetwork
+
 volumes:
   pg_data:
   airflow_logs:
