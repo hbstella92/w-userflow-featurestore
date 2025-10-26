@@ -1,6 +1,6 @@
 import os
 import logging
-from airflow import DAG
+from airflow import DAG, macros
 from airflow.providers.amazon.aws.hooks.s3 import S3Hook
 from airflow.providers.apache.spark.operators.spark_submit import SparkSubmitOperator
 from airflow.operators.python import PythonOperator
@@ -18,7 +18,8 @@ SPARK_PARQUET_WAREHOUSE = os.getenv("SPARK_PARQUET_WAREHOUSE")
 
 
 def check_silver_file_count(**context):
-    prefix = f"iceberg/silver/webtoon_user_session_events/data/datetime_day={context['ds']}/"
+    prev_date = macros.ds_add(context['ds'], -1)
+    prefix = f"iceberg/silver/webtoon_user_session_events/data/datetime_day={prev_date}/"
 
     s3 = S3Hook(aws_conn_id="aws_default")
     files = s3.list_keys(bucket_name="w-userflow-featurestore", prefix=prefix)
@@ -60,8 +61,8 @@ with DAG(
         conn_id="spark_default",
         packages=f"{SPARK_PACKAGES}",
         application_args=[
-            # "--snapshot_date", "{{ macros.ds_add(ds, -1) }}",
-            "--snapshot_date", "{{ ds }}"
+            "--snapshot_date", "{{ macros.ds_add(ds, -1) }}",
+            # "--snapshot_date", "{{ ds }}"
         ],
         conf={
             # Spark setting
