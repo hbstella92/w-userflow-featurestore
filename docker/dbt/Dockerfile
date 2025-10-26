@@ -10,3 +10,6 @@ RUN pip install --no-cache-dir \
     dbt-core \
     dbt-spark \
     pyspark
+
+# 자동 실행 방지용
+CMD ["bash"]
