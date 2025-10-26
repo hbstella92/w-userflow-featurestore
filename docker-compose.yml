@@ -134,7 +134,7 @@ services:
       - ./spark/data:/opt/workspace/data
     command: >
       bash -c "/opt/spark/bin/spark-class org.apache.spark.deploy.master.Master
-      --host 0.0.0.0 --port 7077 --webui-port 8080"
+      --host spark-master --port 7077 --webui-port 8080"
     deploy:
       resources:
         limits:
@@ -177,7 +177,7 @@ services:
       - ./spark/data:/opt/workspace/data
     command: >
       bash -c "/opt/spark/bin/spark-class org.apache.spark.deploy.worker.Worker
-      --host 0.0.0.0 --webui-port 8081 --cores 2 --memory 16G spark://spark-master:7077"
+      --host spark-worker --webui-port 8081 --cores 2 --memory 16G spark://spark-master:7077"
     deploy:
       resources:
         limits:
@@ -220,7 +220,7 @@ services:
       - ./spark/data:/opt/workspace/data
     command: >
       bash -c "/opt/spark/bin/spark-class org.apache.spark.deploy.worker.Worker
-      --host 0.0.0.0 --webui-port 8081 --cores 2 --memory 8G spark://spark-master:7077"
+      --host spark-worker-2 --webui-port 8081 --cores 2 --memory 8G spark://spark-master:7077"
     deploy:
       resources:
         limits:
@@ -231,6 +231,7 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
+
   spark-worker-3:         # gold task 전용
     build:
       context: ./docker/spark
@@ -262,7 +263,7 @@ services:
       - ./spark/data:/opt/workspace/data
     command: >
         bash -c "/opt/spark/bin/spark-class org.apache.spark.deploy.worker.Worker
-        --host 0.0.0.0 --webui-port 8081 --cores 2 --memory 16G spark://spark-master:7077"
+        --host spark-worker-3 --webui-port 8081 --cores 2 --memory 16G spark://spark-master:7077"
     deploy:
       resources:
         limits:
