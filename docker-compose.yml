@@ -104,6 +104,36 @@ services:
       SERVER_PORT: 9000
       SERVER_ADDRESS: 0.0.0.0
 
+  spark-thrift-server:
+    build:
+      context: ./docker/spark-thrift-server
+      dockerfile: Dockerfile
+    container_name: spark-thrift-server
+    hostname: spark-thrift-server
+    user: "1001:1001"
+    depends_on:
+      spark-master:
+        condition: service_healthy
+    env_file:
+      - .env
+    environment:
+      - HOME=/opt/spark
+      - USER=spark
+      - SPARK_MASTER_URL=${SPARK_MASTER}
+      - SPARK_CONF_DIR=/opt/spark/conf
+      - HADOOP_USER_NAME=spark
+      - AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}
+      - AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}
+    ports:
+      - "10000:10000"             # Thrift Server JDBC port
+    networks:
+      - mynetwork
+    volumes:
+      - ./src/spark:/opt/workspace/src/spark
+      - .env:/opt/workspace/.env
+      - spark_ivy2:/opt/spark/.ivy2
+      - ./spark/data:/opt/spark/data
+
   spark-master:
     build:
       context: ./docker/spark
@@ -366,6 +396,27 @@ services:
       retries: 5
       interval: 10s
       timeout: 5s
+
+  dbt:
+    build:
+      context: ./docker/dbt
+      dockerfile: Dockerfile
+    container_name: dbt
+    hostname: dbt
+    depends_on:
+      - spark-thrift-server
+    env_file:
+      - .env
+    environment:
+      - DBT_PROFILES_DIR=/opt/dbt
+      - AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}
+      - AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}
+      - AWS_REGION=ap-northeast-2
+    volumes:
+      - ./dbt:/opt/dbt
+    command: bash -c "dbt deps && sleep infinity"
+    networks:
+      - mynetwork
 
 volumes:
   pg_data:
