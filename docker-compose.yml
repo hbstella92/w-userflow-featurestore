@@ -414,7 +414,7 @@ services:
       - AWS_REGION=ap-northeast-2
     volumes:
       - ./dbt:/opt/dbt
-    command: tail -f /dev/null        # 단순히 켜둔 상태를 유지하기 위함!
+    command: bash -c "dbt deps && sleep infinity"
     networks:
       - mynetwork
 

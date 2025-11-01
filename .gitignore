@@ -9,6 +9,7 @@ ubuntu@140.238.144.177
 # 로그
 airflow/logs/
 airflow/plugins/
+dbt/logs/
 
 # spark
 spark/data/
@@ -16,3 +17,4 @@ spark/checkpoints/
 
 *.pyc
 *.tar
+*.tgz
