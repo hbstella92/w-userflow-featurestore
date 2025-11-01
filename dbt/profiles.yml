@@ -6,14 +6,9 @@ w_userflow_featurestore:
       method: thrift
       host: spark-thrift-server
       port: 10000
-      schema: silver
-      user: spark
+      schema: bronze
       auth: NOSASL
       threads: 4
       connect_timeout: 30
       retries: 3
       use_ssl: false
-      session_properties:
-        spark.sql.catalog.iceberg: org.apache.iceberg.spark.SparkCatalog
-        spark.sql.catalog.iceberg.catalog-impl: org.apache.iceberg.hadoop.HadoopCatalog
-        spark.sql.catalog.iceberg.warehouse: s3a://w-userflow-featurestore/iceberg/

@@ -1,0 +1,17 @@
+version: 2
+
+sources:
+  - name: bronze
+    schema: bronze
+    tables:
+      - name: webtoon_user_events_raw
+        description: "Raw events (bronze layer)"
+        columns:
+          - name: user_id
+            tests: [not_null]
+          - name: session_id
+            tests: [unique]
+          - name: event_type
+            tests:
+              - accepted_values:
+                  values: ["enter", "scroll", "complete", "exit"]
