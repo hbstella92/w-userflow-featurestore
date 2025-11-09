@@ -401,17 +401,17 @@ services:
       interval: 10s
       timeout: 5s
 
-  trino:
-    image: trinodb/trino:432
-    container_name: trino
-    environment:
-      - AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}
-      - AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}
-      - AWS_REGION=ap-northeast-2
-    networks:
-      - mynetwork
-    volumes:
-      - ./src/trino/etc:/etc/trino
+  # trino:
+  #   image: trinodb/trino:432
+  #   container_name: trino
+  #   environment:
+  #     - AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}
+  #     - AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}
+  #     - AWS_REGION=ap-northeast-2
+  #   networks:
+  #     - mynetwork
+  #   volumes:
+  #     - ./src/trino/etc:/etc/trino
 
   # dbt:
   #   build:
