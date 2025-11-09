@@ -15,6 +15,13 @@ dbt/logs/
 spark/data/
 spark/checkpoints/
 
+# dbt
+dbt/.user.yml
+dbt/dbt_packages/
+dbt/package-lock.yml
+dbt/target/
+
 *.pyc
 *.tar
 *.tgz
+*.jar

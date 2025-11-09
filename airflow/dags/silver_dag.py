@@ -157,37 +157,16 @@ with DAG(
             "--end_snapshot_id", "{{ ti.xcom_pull(task_ids='get_snapshot_id', key='latest_snapshot_id') }}"
         ],
         conf={
-            # Spark setting
-            "spark.local.dir": "/tmp/spark-tmp",
-            "spark.pyspark.python": "python3.11",
-            "spark.pyspark.driver": "python3.11",
-            "spark.jars.ivy": "/opt/spark/.ivy2",
-            "spark.driver.extraJavaOptions": "-Duser.name=spark",
-            "spark.executor.extraJavaOptions": "-Duser.name=spark",
             "spark.executor.instances": "2",
             "spark.executor.cores": "2",
             "spark.executor.memory": "6g",
             "spark.driver.memory": "3g",
             "spark.cores.max": "4",
             "spark.sql.shuffle.partitions": "8",
-            "spark.sql.adaptive.enabled": "true",
-            "spark.sql.adaptive.coalescePartitions.enabled": "true",
-            "spark.sql.adaptive.localShuffleReader.enabled": "true",
             "spark.memory.fraction": "0.75",
             "spark.memory.storageFraction": "0.25",
-            # AWS S3 setting
-            "spark.hadoop.fs.defaultFS": "s3a://w-userflow-featurestore/",
-            "spark.hadoop.fs.s3a.aws.credentials.provider": "org.apache.hadoop.fs.s3a.SimpleAWSCredentialsProvider",
-            "spark.hadoop.fs.s3a.endpoint": "s3.ap-northeast-2.amazonaws.com",
-            "spark.hadoop.fs.s3a.impl": "org.apache.hadoop.fs.s3a.S3AFileSystem",
-            "spark.hadoop.fs.s3a.path.style.access": "true",
-            # Iceberg catalog setting
-            "spark.sql.catalog.iceberg": "org.apache.iceberg.spark.SparkCatalog",
-            "spark.sql.catalog.iceberg.type": "hadoop",
             # "spark.sql.catalog.iceberg.type": "hive",
             # "spark.sql.catalog.iceberg.uri": "thrift://localhost:9083",
-            "spark.sql.catalog.iceberg.warehouse": f"{SPARK_PARQUET_WAREHOUSE}",
-            "spark.sql.extensions": "org.apache.iceberg.spark.extensions.IcebergSparkSessionExtensions"
         },
         verbose=True
     )

@@ -65,39 +65,15 @@ with DAG(
             # "--snapshot_date", "{{ ds }}"
         ],
         conf={
-            # Spark setting
-            "spark.local.dir": "/tmp/spark-tmp",
-            "spark.pyspark.python": "python3.11",
-            "spark.pyspark.driver": "python3.11",
-            "spark.jars.ivy": "/opt/spark/.ivy2",
-            "spark.driver.extraJavaOptions": "-Duser.name=spark",
-            "spark.executor.extraJavaOptions": "-Duser.name=spark",
             "spark.executor.instances": "1",
             "spark.executor.cores": "2",
             "spark.executor.memory": "12g",
             "spark.driver.memory": "6g",
             "spark.cores.max": "2",
             "spark.sql.shuffle.partitions": "8",
-            "spark.sql.adaptive.enabled": "true",
             "spark.sql.adaptive.skewJoin.enabled": "true",
-            "spark.sql.adaptive.localShuffleReader.enabled": "true",
             "spark.memory.fraction": "0.8",
             "spark.memory.storageFraction": "0.2",
-            # AWS S3 setting
-            "spark.hadoop.fs.defaultFS": "s3a://w-userflow-featurestore/",
-            "spark.hadoop.fs.s3a.aws.credentials.provider": "org.apache.hadoop.fs.s3a.SimpleAWSCredentialsProvider",
-            "spark.hadoop.fs.s3a.endpoint": "s3.ap-northeast-2.amazonaws.com",
-            "spark.hadoop.fs.s3a.impl": "org.apache.hadoop.fs.s3a.S3AFileSystem",
-            "spark.hadoop.fs.s3a.path.style.access": "true",
-            "spark.hadoop.fs.s3a.fast.upload": "true",
-            "spark.hadoop.fs.s3a.connection.maximum": "200",
-            # Iceberg catalog setting
-            "spark.sql.catalog.iceberg": "org.apache.iceberg.spark.SparkCatalog",
-            "spark.sql.catalog.iceberg.type": "hadoop",
-            # "spark.sql.catalog.iceberg.type": "hive",
-            # "spark.sql.catalog.iceberg.uri": "thrift://localhost:9083",
-            "spark.sql.catalog.iceberg.warehouse": f"{SPARK_PARQUET_WAREHOUSE}",
-            "spark.sql.extensions": "org.apache.iceberg.spark.extensions.IcebergSparkSessionExtensions"
         },
         verbose=True
     )
