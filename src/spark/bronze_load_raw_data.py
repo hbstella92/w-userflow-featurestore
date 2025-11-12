@@ -78,6 +78,8 @@ if __name__ == "__main__":
     df = json_df.select(from_json(col("json_str"), raw_event_schema).alias("data")).select("data.*")
 
     bronze_df = df.withColumn("datetime", to_date(col("utimestamptz")))
+    print("[Data] Bronze table ex.")
+    bronze_df.show(20, truncate=False)
 
     query = bronze_df.writeStream \
                     .format("iceberg") \

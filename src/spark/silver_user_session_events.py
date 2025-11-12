@@ -147,6 +147,7 @@ if __name__ == "__main__":
                     .withColumn("is_complete", when(col("session_state") == "COMPLETE", 1).otherwise(0)) \
                     .withColumn("is_exit", when(col("session_state").isin("EXIT", "TIMEOUT_EXIT"), 1).otherwise(0))
     
+    print("[Data] Silver table ex.")
     windowed_df.show(20, truncate=False)
 
     query = windowed_df \

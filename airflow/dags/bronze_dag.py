@@ -30,10 +30,31 @@ with DAG(
         conn_id="spark_default",
         packages=f"{SPARK_PACKAGES}",
         conf={
+            "spark.local.dir": "/tmp/spark-tmp",
+            "spark.pyspark.python": "python3.11",
+            "spark.pyspark.driver": "python3.11",
+            # Spark setting
+            "spark.jars.ivy": "/opt/spark/.ivy2",
+            "spark.hadoop.fs.defaultFS": "s3a://w-userflow-featurestore/",
+            "spark.hadoop.fs.s3a.aws.credentials.provider": "org.apache.hadoop.fs.s3a.SimpleAWSCredentialsProvider",
+            "spark.sql.catalogImplementation": "in-memory",
+            "spark.driver.extraJavaOptions": "-Duser.name=spark",
+            "spark.executor.extraJavaOptions": "-Duser.name=spark",
             "spark.executor.instances": "1",
             "spark.executor.cores": "1",
             "spark.executor.memory": "4g",
             "spark.cores.max": "1",
+            # AWS S3 setting
+            "spark.hadoop.fs.s3a.endpoint": "s3.ap-northeast-2.amazonaws.com",
+            "spark.hadoop.fs.s3a.impl": "org.apache.hadoop.fs.s3a.S3AFileSystem",
+            "spark.hadoop.fs.s3a.path.style.access": "true",
+            # Iceberg catalog setting
+            "spark.sql.catalog.iceberg": "org.apache.iceberg.spark.SparkCatalog",           # catalog name
+            "spark.sql.catalog.iceberg.type": "hadoop",                                     # catalog backend type
+            # "spark.sql.catalog.iceberg.type": "hive",
+            # "spark.sql.catalog.iceberg.uri": "thrift://localhost:9083",
+            "spark.sql.catalog.iceberg.warehouse": f"{SPARK_PARQUET_WAREHOUSE}",
+            "spark.sql.extensions": "org.apache.iceberg.spark.extensions.IcebergSparkSessionExtensions"
         },
         verbose=True
     )
