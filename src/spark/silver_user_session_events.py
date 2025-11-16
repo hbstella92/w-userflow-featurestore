@@ -134,7 +134,7 @@ if __name__ == "__main__":
                         (col("max_scroll_ratio") < 0.95),
                         lit("EXIT")
                     ).when(
-                        unix_timestamp(current_timestamp()) - unix_timestamp("end_time") > 300,
+                        unix_timestamp(current_timestamp()) - unix_timestamp("end_time") > 600,
                         lit("TIMEOUT_EXIT")
                     ).otherwise(lit("IN_PROGRESS"))
                 )
