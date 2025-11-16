@@ -5,9 +5,6 @@ from pyspark.sql.functions import *
 from datetime import datetime
 
 
-SPARK_PARQUET_WAREHOUSE = os.getenv("SPARK_PARQUET_WAREHOUSE")
-
-
 def to_int_or_none(x):
     try:
         return int(x) if x not in (None, "", "None") else None

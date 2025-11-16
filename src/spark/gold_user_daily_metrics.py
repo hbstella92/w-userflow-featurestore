@@ -6,9 +6,6 @@ from pyspark.sql.window import Window
 from datetime import datetime, timedelta
 
 
-SPARK_PARQUET_WAREHOUSE = os.getenv("SPARK_PARQUET_WAREHOUSE")
-
-
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--snapshot_date", required=False)
