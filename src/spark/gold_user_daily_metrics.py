@@ -98,7 +98,8 @@ if __name__ == "__main__":
     user_daily_df = user_daily_df.join(
                                     repeat_complete_df, ["datetime", "user_id"], "left"
                                 ) \
-                                .na.fill({"repeat_episode_complete_count": 0})
+                                .na.fill({"repeat_episode_complete_count": 0}) \
+                                .orderBy("user_id")
 
     user_daily_df.show(20, truncate=False)
 

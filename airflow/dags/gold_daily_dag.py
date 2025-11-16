@@ -116,4 +116,17 @@ with DAG (
         verbose=True
     )
 
-    check_silver_data >> gold_user_daily_metrics >> gold_webtoon_episode_daily_metrics
+    gold_webtoon_daily_metrics = SparkSubmitOperator(
+        task_id="gold_webtoon_daily_metrics",
+        application="/opt/workspace/src/spark/gold_webtoon_daily_metrics.py",
+        conn_id="spark_default",
+        packages=f"{SPARK_PACKAGES}",
+        application_args=[
+            # "--snapshot_date", "{{ macros.ds_add(ds, -1) }}",
+            "--snapshot_date", "{{ ds }}"
+        ],
+        conf=SPARK_APP_CONF,
+        verbose=True
+    )
+
+    check_silver_data >> gold_user_daily_metrics >> gold_webtoon_episode_daily_metrics >> gold_webtoon_daily_metrics

@@ -110,7 +110,8 @@ if __name__ == "__main__":
     episode_daily_df = episode_daily_df \
                                 .withColumn("continued_user_count", coalesce(col("continued_user_count"), lit(0))) \
                                 .withColumn("episode_attractiveness_index",
-                                            when(col("unique_users") > 0, round(col("continued_user_count") / col("unique_users"), 2)).otherwise(lit(0.0)))
+                                            when(col("unique_users") > 0, round(col("continued_user_count") / col("unique_users"), 2)).otherwise(lit(0.0))) \
+                                .orderBy("webtoon_id", "episode_id")
 
     episode_daily_df.show(20, truncate=False)
 
