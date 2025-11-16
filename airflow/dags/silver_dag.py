@@ -75,6 +75,9 @@ def is_ancestor_snapshot(ss, table_name, start_id, end_id):
             break
 
         parent_id = rows[0]["parent_id"]
+        if parent_id is None:
+            return False
+
         if parent_id == start_id:
             return True
 

@@ -145,6 +145,11 @@ if __name__ == "__main__":
     print("[Data] Silver table ex.")
     windowed_df.show(20, truncate=False)
 
-    query = windowed_df \
-        .writeTo("iceberg.silver.webtoon_user_session_events") \
-        .append()
+    if start_snapshot_id:
+        query = windowed_df \
+                    .writeTo("iceberg.silver.webtoon_user_session_events") \
+                    .append()
+    else:
+        query = windowed_df \
+            .writeTo("iceberg.silver.webtoon_user_session_events") \
+            .overwritePartitions()
