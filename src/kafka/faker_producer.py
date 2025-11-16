@@ -147,11 +147,11 @@ def build_session_events(session_id: str, profile: dict, content: dict, out_of_o
     count = 0
     dwell_ms = 0
 
-    is_complete = random.random() < 0.7
+    is_complete = random.random() < 0.8
     max_ratio_limit = 1.0 if is_complete else random.uniform(0.6, 0.9)
 
     for i in range(n_scrolls):
-        delta_ms = fake.random_int(min=500, max=5000)
+        delta_ms = fake.random_int(min=10000, max=60000)
         dwell_ms += delta_ms
         t += timedelta(milliseconds=delta_ms)
 
@@ -166,12 +166,14 @@ def build_session_events(session_id: str, profile: dict, content: dict, out_of_o
             break
 
     # 3) COMPLETE 혹은 EXIT
-    delta_ms = fake.random_int(min=500, max=5000)
+    delta_ms = fake.random_int(min=10000, max=60000)
     dwell_ms += delta_ms
     t += timedelta(milliseconds=delta_ms)
 
-    if is_complete and ratio < 1.0:
-        ratio = min(1.0, ratio + random.uniform(0.01, 0.2))
+    if is_complete:
+        ratio = 1.0
+    else:
+        ratio = min(ratio, random.uniform(0.6, 0.9))
     
     terminate_event = make_terminate_event(session_id, t, profile, content, network,
                                            is_complete, ratio, count, dwell_ms)
