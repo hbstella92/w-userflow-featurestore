@@ -32,15 +32,15 @@ if __name__ == "__main__":
             exit_sessions BIGINT,
             incomplete_sessions BIGINT,
             avg_scroll_ratio DOUBLE,
-            avg_duration_ms BIGINT,
+            avg_duration_ms DOUBLE,
             bounce_ratio DOUBLE,
-            repeat_episode_complete_count BIGINT,
             distinct_episode_views BIGINT,
             distinct_episode_completes BIGINT,
             completion_rate DOUBLE,
             exit_rate DOUBLE,
             multi_episode_read_flag INT,
-            avg_return_interval_sec DOUBLE
+            avg_return_interval_sec DOUBLE,
+            repeat_episode_complete_count BIGINT
         )
         USING iceberg
         PARTITIONED BY (days(datetime));
@@ -73,7 +73,7 @@ if __name__ == "__main__":
 
     session_interval_df = silver_df.select("datetime", "user_id", "start_time", "end_time") \
                                     .withColumn("prev_end_time", lag("end_time", 1).over(w)) \
-                                    .withColumn("interval_sec", unix_timestamp("start_time") - unix_timestamp("prev_end_time")) \
+                                    .withColumn("interval_sec", when(col("prev_end_time").isNull(), None).otherwise(greatest(unix_timestamp("start_time") - unix_timestamp("prev_end_time"), lit(0)))) \
                                     .groupBy("datetime", "user_id") \
                                     .agg(
                                         coalesce(round(avg("interval_sec"), 2), lit(0.0)).alias("avg_return_interval_sec")
@@ -85,7 +85,7 @@ if __name__ == "__main__":
 
     # Calculate total repeat count
     repeat_complete_df = silver_df.filter(col("is_complete") == 1) \
-                                    .groupBy("datetime", "user_id", "episode_id") \
+                                    .groupBy("datetime", "user_id", "webtoon_id", "episode_id") \
                                     .agg(
                                         count("*").alias("complete_count_per_episode")
                                     ) \
