@@ -24,6 +24,7 @@ if __name__ == "__main__":
         CREATE TABLE IF NOT EXISTS iceberg.gold.webtoon_daily_metrics(
             datetime DATE,
             webtoon_id STRING,
+
             deepest_episode_reached STRING,
             total_sessions BIGINT,
             complete_sessions BIGINT,

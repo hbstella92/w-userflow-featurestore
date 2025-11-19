@@ -25,6 +25,7 @@ if __name__ == "__main__":
             datetime DATE,
             webtoon_id STRING,
             episode_id STRING,
+
             total_sessions BIGINT,
             complete_sessions BIGINT,
             exit_sessions BIGINT,

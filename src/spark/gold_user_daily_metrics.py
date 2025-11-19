@@ -24,6 +24,7 @@ if __name__ == "__main__":
         CREATE TABLE IF NOT EXISTS iceberg.gold.user_daily_metrics (
             datetime DATE,
             user_id INT,
+
             total_episode_sessions BIGINT,
             complete_sessions BIGINT,
             exit_sessions BIGINT,
