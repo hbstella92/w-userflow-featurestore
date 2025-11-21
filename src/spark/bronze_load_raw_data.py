@@ -79,10 +79,18 @@ if __name__ == "__main__":
 
     bronze_df = df.withColumn("datetime", to_date(col("utimestamptz")))
 
+    dbg_query = bronze_df.writeStream \
+                        .format("console") \
+                        .option("truncate", False) \
+                        .start()
+
     query = bronze_df.writeStream \
                     .format("iceberg") \
                     .outputMode("append") \
                     .option("checkpointLocation", f"{SPARK_CHECKPOINT_DIR}/bronze/1") \
+                    .option("maxOffsetsPerTrigger", "5000") \
+                    .trigger(processingTime="30 seconds") \
                     .toTable("iceberg.bronze.webtoon_user_events_raw")
     
+    dbg_query.awaitTermination()
     query.awaitTermination()

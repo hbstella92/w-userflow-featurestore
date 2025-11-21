@@ -5,9 +5,6 @@ from pyspark.sql.functions import *
 from datetime import datetime
 
 
-SPARK_PARQUET_WAREHOUSE = os.getenv("SPARK_PARQUET_WAREHOUSE")
-
-
 def to_int_or_none(x):
     try:
         return int(x) if x not in (None, "", "None") else None
@@ -34,10 +31,6 @@ if __name__ == "__main__":
            browser STRING,
            datetime DATE,
 
-           window STRUCT<
-            start TIMESTAMP,
-            end TIMESTAMP
-           >,
            start_time TIMESTAMP,
            end_time TIMESTAMP,
            duration_ms BIGINT,
@@ -116,13 +109,12 @@ if __name__ == "__main__":
     # aggregation
     windowed_df = bronze_df.groupBy("session_id", "user_id", "webtoon_id", "episode_id",
                                     "platform", "country", "device", "browser",
-                                    "datetime",
-                                    session_window("utimestamptz", "5 minutes").alias("window")) \
+                                    "datetime") \
                             .agg(
                                 min("utimestamptz").alias("start_time"),
                                 max("utimestamptz").alias("end_time"),
                                 max("dwell_time_ms").alias("duration_ms"),
-                                max("scroll_ratio").alias("max_scroll_ratio"),
+                                round(max("scroll_ratio"), 2).alias("max_scroll_ratio"),
                                 max(when(col("event_type") == "enter", True).otherwise(False)).alias("seen_enter"),
                                 max(when(col("event_type") == "scroll", True).otherwise(False)).alias("seen_scroll"),
                                 max(when(col("event_type") == "complete", True).otherwise(False)).alias("seen_complete"),
@@ -139,7 +131,7 @@ if __name__ == "__main__":
                         (col("max_scroll_ratio") < 0.95),
                         lit("EXIT")
                     ).when(
-                        unix_timestamp(current_timestamp()) - unix_timestamp("end_time") > 1800,
+                        unix_timestamp(current_timestamp()) - unix_timestamp("end_time") > 600,
                         lit("TIMEOUT_EXIT")
                     ).otherwise(lit("IN_PROGRESS"))
                 )
@@ -147,8 +139,14 @@ if __name__ == "__main__":
                     .withColumn("is_complete", when(col("session_state") == "COMPLETE", 1).otherwise(0)) \
                     .withColumn("is_exit", when(col("session_state").isin("EXIT", "TIMEOUT_EXIT"), 1).otherwise(0))
     
+    print("[Data] Silver table ex.")
     windowed_df.show(20, truncate=False)
 
-    query = windowed_df \
-        .writeTo("iceberg.silver.webtoon_user_session_events") \
-        .append()
+    if start_snapshot_id:
+        query = windowed_df \
+                    .writeTo("iceberg.silver.webtoon_user_session_events") \
+                    .append()
+    else:
+        query = windowed_df \
+            .writeTo("iceberg.silver.webtoon_user_session_events") \
+            .overwritePartitions()
