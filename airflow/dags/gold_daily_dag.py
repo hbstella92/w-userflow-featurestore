@@ -54,8 +54,8 @@ SPARK_APP_CONF = {
 
 def check_silver_file_count(**context):
     # TODO : activate before deploying app!
-    prev_date = macros.ds_add(context["ds"], -1)
-    # prev_date = now(kst).format("YYYY-MM-DD")
+    # prev_date = macros.ds_add(context["ds"], -1)
+    prev_date = now(kst).format("YYYY-MM-DD")
     prefix = f"iceberg/silver/webtoon_user_session_events/data/datetime_day={prev_date}/"
 
     s3 = S3Hook(aws_conn_id="aws_default")
@@ -96,8 +96,8 @@ with DAG (
         conn_id="spark_default",
         packages=f"{SPARK_PACKAGES}",
         application_args=[
-            "--snapshot_date", "{{ macros.ds_add(ds, -1) }}"
-            # "--snapshot_date", "{{ ds }}"
+            # "--snapshot_date", "{{ macros.ds_add(ds, -1) }}"
+            "--snapshot_date", "{{ ds }}"
         ],
         conf=SPARK_APP_CONF,
         verbose=True
@@ -109,8 +109,8 @@ with DAG (
         conn_id="spark_default",
         packages=f"{SPARK_PACKAGES}",
         application_args=[
-            "--snapshot_date", "{{ macros.ds_add(ds, -1) }}"
-            # "--snapshot_date", "{{ ds }}"
+            # "--snapshot_date", "{{ macros.ds_add(ds, -1) }}"
+            "--snapshot_date", "{{ ds }}"
         ],
         conf=SPARK_APP_CONF,
         verbose=True
@@ -122,8 +122,8 @@ with DAG (
         conn_id="spark_default",
         packages=f"{SPARK_PACKAGES}",
         application_args=[
-            "--snapshot_date", "{{ macros.ds_add(ds, -1) }}"
-            # "--snapshot_date", "{{ ds }}"
+            # "--snapshot_date", "{{ macros.ds_add(ds, -1) }}"
+            "--snapshot_date", "{{ ds }}"
         ],
         conf=SPARK_APP_CONF,
         verbose=True
@@ -135,11 +135,24 @@ with DAG (
         conn_id="spark_default",
         packages=f"{SPARK_PACKAGES}",
         application_args=[
-            "--snapshot_date", "{{ macros.ds_add(ds, -1) }}"
-            # "--snapshot_date", "{{ ds }}"
+            # "--snapshot_date", "{{ macros.ds_add(ds, -1) }}"
+            "--snapshot_date", "{{ ds }}"
         ],
         conf=SPARK_APP_CONF,
         verbose=True
     )
 
-    check_silver_data >> gold_user_daily_metrics >> gold_webtoon_episode_daily_metrics >> gold_webtoon_daily_metrics >> gold_platform_device_daily_metrics
+    gold_country_daily_metrics = SparkSubmitOperator(
+        task_id="gold_country_daily_metrics",
+        application="/opt/workspace/src/spark/gold_country_daily_metrics.py",
+        conn_id="spark_default",
+        packages=f"{SPARK_PACKAGES}",
+        application_args=[
+            # "--snapshot_date", "{{ macros.ds_add(ds, -1) }}"
+            "--snapshot_date", "{{ ds }}"
+        ],
+        conf=SPARK_APP_CONF,
+        verbose=True
+    )
+
+    check_silver_data >> gold_user_daily_metrics >> gold_webtoon_episode_daily_metrics >> gold_webtoon_daily_metrics >> gold_platform_device_daily_metrics >> gold_country_daily_metrics
