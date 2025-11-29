@@ -14,8 +14,10 @@ kst = timezone("Asia/Seoul")
 
 
 SPARK_MASTER = os.getenv("SPARK_MASTER")
-SPARK_PACKAGES = os.getenv("SPARK_PACKAGES")
 SPARK_PARQUET_WAREHOUSE = os.getenv("SPARK_PARQUET_WAREHOUSE")
+
+AWS_ACCESS_KEY_ID = os.getenv("AWS_ACCESS_KEY_ID")
+AWS_SECRET_ACCESS_KEY = os.getenv("AWS_SECRET_ACCESS_KEY")
 
 AIRFLOW__WEBSERVER__WEB_BASE_URL = os.getenv("AIRFLOW__WEBSERVER__WEB_BASE_URL")
 
@@ -90,10 +92,11 @@ def get_snapshot_id(**context):
     from pyspark.sql import SparkSession
 
     ss = SparkSession.builder \
-                    .config("spark.jars.packages", f"{SPARK_PACKAGES}") \
                     .config("spark.sql.catalog.iceberg", "org.apache.iceberg.spark.SparkCatalog") \
-                    .config("spark.sql.catalog.iceberg.type", "hadoop") \
-                    .config("spark.sql.catalog.iceberg.warehouse", f"{SPARK_PARQUET_WAREHOUSE}") \
+                    .config("spark.sql.catalog.iceberg.catalog-impl", "org.apache.iceberg.rest.RESTCatalog") \
+                    .config("spark.sql.catalog.iceberg.uri", "http://iceberg-rest:8181") \
+                    .config("spark.sql.catalog.iceberg.warehouse", SPARK_PARQUET_WAREHOUSE) \
+                    .config("spark.sql.extensions", "org.apache.iceberg.spark.extensions.IcebergSparkSessionExtensions") \
                     .getOrCreate()
     
     snapshot_df = ss.sql("""
@@ -156,8 +159,6 @@ with DAG(
         task_id="silver_user_session_events",
         application="/opt/workspace/src/spark/silver_user_session_events.py",
         conn_id="spark_default",
-        packages=f"{SPARK_PACKAGES}",
-        jars="/opt/spark/jars/aws-java-sdk-bundle-1.12.367.jar",
         application_args=[
             "--date", "{{ ds }}",
             "--start_snapshot_id", "{{ ti.xcom_pull(task_ids='get_snapshot_id', key='prev_snapshot_id') | default('', true) }}",
@@ -166,11 +167,9 @@ with DAG(
         conf={
             # Spark setting
             "spark.local.dir": "/tmp/spark-tmp",
-            "spark.pyspark.python": "python3.11",
-            "spark.pyspark.driver": "python3.11",
+            "spark.pyspark.python": "python3",
+            "spark.pyspark.driver": "python3",
             "spark.jars.ivy": "/opt/spark/.ivy2",
-            "spark.driver.extraJavaOptions": "-Duser.name=spark",
-            "spark.executor.extraJavaOptions": "-Duser.name=spark",
             "spark.executor.instances": "2",
             "spark.executor.cores": "2",
             "spark.executor.memory": "6g",
@@ -182,19 +181,17 @@ with DAG(
             "spark.sql.adaptive.localShuffleReader.enabled": "true",
             "spark.memory.fraction": "0.75",
             "spark.memory.storageFraction": "0.25",
-            # AWS S3 setting
-            "spark.hadoop.fs.defaultFS": "s3a://w-userflow-featurestore/",
-            "spark.hadoop.fs.s3a.aws.credentials.provider": "org.apache.hadoop.fs.s3a.SimpleAWSCredentialsProvider",
-            "spark.hadoop.fs.s3a.endpoint": "s3.ap-northeast-2.amazonaws.com",
-            "spark.hadoop.fs.s3a.impl": "org.apache.hadoop.fs.s3a.S3AFileSystem",
-            "spark.hadoop.fs.s3a.path.style.access": "true",
-            # Iceberg catalog setting
             "spark.sql.catalog.iceberg": "org.apache.iceberg.spark.SparkCatalog",
-            "spark.sql.catalog.iceberg.type": "hadoop",
-            # "spark.sql.catalog.iceberg.type": "hive",
-            # "spark.sql.catalog.iceberg.uri": "thrift://localhost:9083",
-            "spark.sql.catalog.iceberg.warehouse": f"{SPARK_PARQUET_WAREHOUSE}",
-            "spark.sql.extensions": "org.apache.iceberg.spark.extensions.IcebergSparkSessionExtensions"
+            "spark.sql.catalog.iceberg.catalog-impl": "org.apache.iceberg.rest.RESTCatalog",
+            "spark.sql.catalog.iceberg.uri": "http://iceberg-rest:8181",
+            "spark.sql.catalog.iceberg.warehouse": SPARK_PARQUET_WAREHOUSE,
+            "spark.sql.extensions": "org.apache.iceberg.spark.extensions.IcebergSparkSessionExtensions",
+            "spark.sql.catalog.iceberg.io-impl": "org.apache.iceberg.aws.s3.S3FileIO",
+            "spark.sql.catalog.iceberg.s3.endpoint": "https://s3.ap-northeast-2.amazonaws.com",
+            "spark.sql.catalog.iceberg.s3.region": "ap-northeast-2",
+            "spark.sql.catalog.iceberg.s3.path-style-access": "true",
+            "spark.sql.catalog.iceberg.s3.access-key-id": AWS_ACCESS_KEY_ID,
+            "spark.sql.catalog.iceberg.s3.secret-access-key": AWS_SECRET_ACCESS_KEY,
         },
         verbose=True
     )

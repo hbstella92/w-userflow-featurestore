@@ -140,15 +140,12 @@ services:
       dockerfile: Dockerfile
     container_name: spark-master
     hostname: spark-master
-    user: "1001:1001"
     env_file:
       - .env
     environment:
       - HOME=/opt/spark
       - USER=spark                            # 단순 리눅스 환경변수 (실제 리눅스 계정, 컨테이너 실행 권한과 관련 X)
       - HADOOP_USER_NAME=spark                # 내부적으로 HDFS API 호출 시, 권한 체크하는 Hadoop 계정
-      - SPARK_SUBMIT=/opt/spark/bin/spark-submit
-      - JAVA_TOOL_OPTIONS=-Duser.name=spark   # JVM 설정. 내부적으로 자바 코드 호출 시 참조하는 사용자 계정
       - AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}
       - AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}
     ports:
@@ -158,14 +155,11 @@ services:
       - mynetwork
     volumes:
       - ./src/spark:/opt/workspace/src/spark
-      - ./src/spark/conf/spark-defaults.conf:/opt/spark/conf/spark-defaults.conf
       - .env:/opt/workspace/.env
-      - spark_ivy2:/opt/spark/.ivy2               # 의존성 jar 다운로드 하기 위한 폴더
       - ./spark/checkpoints:/opt/workspace/checkpoints
       - ./spark/data:/opt/workspace/data
     command: >
-      bash -c "/opt/spark/bin/spark-class org.apache.spark.deploy.master.Master
-      --host spark-master --port 7077 --webui-port 8080"
+      bash -c "/opt/spark/bin/spark-class org.apache.spark.deploy.master.Master --host spark-master --port 7077 --webui-port 8080"
     deploy:
       resources:
         limits:
@@ -183,7 +177,6 @@ services:
       dockerfile: Dockerfile
     container_name: spark-worker
     hostname: spark-worker
-    user: "1001:1001"
     depends_on:
       spark-master:
         condition: service_healthy
@@ -193,7 +186,6 @@ services:
       - HOME=/opt/spark
       - USER=spark
       - HADOOP_USER_NAME=spark
-      - JAVA_TOOL_OPTIONS=-Duser.name=spark
       - AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}
       - AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}
     ports:
@@ -202,14 +194,11 @@ services:
       - mynetwork
     volumes:
       - ./src/spark:/opt/workspace/src/spark
-      - ./src/spark/conf/spark-defaults.conf:/opt/spark/conf/spark-defaults.conf
       - .env:/opt/workspace/.env
-      - spark_ivy2:/opt/spark/.ivy2
       - ./spark/checkpoints:/opt/workspace/checkpoints
       - ./spark/data:/opt/workspace/data
     command: >
-      bash -c "/opt/spark/bin/spark-class org.apache.spark.deploy.worker.Worker
-      --host spark-worker --webui-port 8081 --cores 2 --memory 16G spark://spark-master:7077"
+      bash -c "/opt/spark/bin/spark-class org.apache.spark.deploy.worker.Worker --host spark-worker --webui-port 8081 --cores 2 --memory 16G spark://spark-master:7077"
     deploy:
       resources:
         limits:
@@ -227,7 +216,6 @@ services:
       dockerfile: Dockerfile
     container_name: spark-worker-2
     hostname: spark-worker-2
-    user: "1001:1001"
     depends_on:
       spark-master:
         condition: service_healthy
@@ -237,7 +225,6 @@ services:
       - HOME=/opt/spark
       - USER=spark
       - HADOOP_USER_NAME=spark
-      - JAVA_TOOL_OPTIONS=-Duser.name=spark
       - AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}
       - AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}
     ports:
@@ -246,14 +233,11 @@ services:
       - mynetwork
     volumes:
       - ./src/spark:/opt/workspace/src/spark
-      - ./src/spark/conf/spark-defaults.conf:/opt/spark/conf/spark-defaults.conf
       - .env:/opt/workspace/.env
-      - spark_ivy2:/opt/spark/.ivy2
       - ./spark/checkpoints:/opt/workspace/checkpoints
       - ./spark/data:/opt/workspace/data
     command: >
-      bash -c "/opt/spark/bin/spark-class org.apache.spark.deploy.worker.Worker
-      --host spark-worker-2 --webui-port 8081 --cores 2 --memory 8G spark://spark-master:7077"
+      bash -c "/opt/spark/bin/spark-class org.apache.spark.deploy.worker.Worker --host spark-worker-2 --webui-port 8081 --cores 2 --memory 8G spark://spark-master:7077"
     deploy:
       resources:
         limits:
@@ -271,7 +255,6 @@ services:
       dockerfile: Dockerfile
     container_name: spark-worker-3
     hostname: spark-worker-3
-    user: "1001:1001"
     depends_on:
       spark-master:
         condition: service_healthy
@@ -281,7 +264,6 @@ services:
       - HOME=/opt/spark
       - USER=spark
       - HADOOP_USER_NAME=spark
-      - JAVA_TOOL_OPTIONS=-Duser.name=spark
       - AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}
       - AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}
     ports:
@@ -290,14 +272,11 @@ services:
       - mynetwork
     volumes:
       - ./src/spark:/opt/workspace/src/spark
-      - ./src/spark/conf/spark-defaults.conf:/opt/spark/conf/spark-defaults.conf
       - .env:/opt/workspace/.env
-      - spark_ivy2:/opt/spark/.ivy2
       - ./spark/checkpoints:/opt/workspace/checkpoints
       - ./spark/data:/opt/workspace/data
     command: >
-        bash -c "/opt/spark/bin/spark-class org.apache.spark.deploy.worker.Worker
-        --host spark-worker-3 --webui-port 8081 --cores 2 --memory 16G spark://spark-master:7077"
+        bash -c "/opt/spark/bin/spark-class org.apache.spark.deploy.worker.Worker --host spark-worker-3 --webui-port 8081 --cores 2 --memory 16G spark://spark-master:7077"
     deploy:
       resources:
         limits:
@@ -331,7 +310,6 @@ services:
       # For spark submit
       SPARK_MASTER: ${SPARK_MASTER}
       SPARK_CHECKPOINT_DIR: ${SPARK_CHECKPOINT_DIR}
-      SPARK_PACKAGES: ${SPARK_PACKAGES}
     networks:
       - mynetwork
     volumes:
@@ -339,7 +317,6 @@ services:
       - airflow_logs:/opt/airflow/logs
       - ./src/spark:/opt/workspace/src/spark
       - airflow_plugins:/opt/airflow/plugins
-      - spark_ivy2:/opt/spark/.ivy2
 
   airflow-init:
     <<: *airflow-common
@@ -401,17 +378,52 @@ services:
       interval: 10s
       timeout: 5s
 
-  # trino:
-  #   image: trinodb/trino:432
-  #   container_name: trino
-  #   environment:
-  #     - AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}
-  #     - AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}
-  #     - AWS_REGION=ap-northeast-2
-  #   networks:
-  #     - mynetwork
-  #   volumes:
-  #     - ./src/trino/etc:/etc/trino
+  trino:
+    image: trinodb/trino:430
+    container_name: trino
+    ports:
+      - "8085:8080"
+    volumes:
+      - ./trino/etc:/etc/trino
+    env_file:
+      - .env
+    environment:
+      JAVA_TOOL_OPTIONS: -Xmx4G
+    depends_on:
+      - iceberg-rest
+    networks:
+      - mynetwork
+    restart: always
+
+  iceberg-rest:
+    image: tabulario/iceberg-rest:latest
+    container_name: iceberg-rest
+    ports:
+      - "8181:8181"
+    environment:
+      CATALOG_WAREHOUSE: ${SPARK_PARQUET_WAREHOUSE}
+      CATALOG_IO__IMPL: org.apache.iceberg.aws.s3.S3FileIO
+
+      AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID}
+      AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY}
+      AWS_REGION: ${AWS_REGION}
+
+      CATALOG_S3_ENDPOINT: https://s3.ap-northeast-2.amazonaws.com
+      CATALOG_S3_REGION: ${AWS_REGION}
+      CATALOG_S3_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID}
+      CATALOG_S3_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY}
+    networks:
+      - mynetwork
+    restart: always
+
+  grafana:
+    image: grafana/grafana:latest
+    container_name: grafana
+    ports:
+      - "3000:3000"
+    networks:
+      - mynetwork
+    restart: always
 
   # dbt:
   #   build:
@@ -438,4 +450,3 @@ volumes:
   pg_data:
   airflow_logs:
   airflow_plugins:
-  spark_ivy2:

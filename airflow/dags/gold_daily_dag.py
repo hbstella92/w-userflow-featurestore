@@ -13,16 +13,15 @@ kst = timezone("Asia/Seoul")
 TOTAL_FILE_COUNT_PER_DAILY = 1
 
 
-SPARK_PACKAGES = os.getenv("SPARK_PACKAGES")
 SPARK_PARQUET_WAREHOUSE = os.getenv("SPARK_PARQUET_WAREHOUSE")
+AWS_ACCESS_KEY_ID = os.getenv("AWS_ACCESS_KEY_ID")
+AWS_SECRET_ACCESS_KEY = os.getenv("AWS_SECRET_ACCESS_KEY")
 SPARK_APP_CONF = {
     # Spark setting
     "spark.local.dir": "/tmp/spark-tmp",
-    "spark.pyspark.python": "python3.11",
-    "spark.pyspark.driver": "python3.11",
+    "spark.pyspark.python": "python3",
+    "spark.pyspark.driver": "python3",
     "spark.jars.ivy": "/opt/spark/.ivy2",
-    "spark.driver.extraJavaOptions": "-Duser.name=spark",
-    "spark.executor.extraJavaOptions": "-Duser.name=spark",
     "spark.executor.instances": "1",
     "spark.executor.cores": "2",
     "spark.executor.memory": "12g",
@@ -34,28 +33,25 @@ SPARK_APP_CONF = {
     "spark.sql.adaptive.localShuffleReader.enabled": "true",
     "spark.memory.fraction": "0.8",
     "spark.memory.storageFraction": "0.2",
-    # AWS S3 setting
-    "spark.hadoop.fs.defaultFS": "s3a://w-userflow-featurestore/",
-    "spark.hadoop.fs.s3a.aws.credentials.provider": "org.apache.hadoop.fs.s3a.SimpleAWSCredentialsProvider",
-    "spark.hadoop.fs.s3a.endpoint": "s3.ap-northeast-2.amazonaws.com",
-    "spark.hadoop.fs.s3a.impl": "org.apache.hadoop.fs.s3a.S3AFileSystem",
-    "spark.hadoop.fs.s3a.path.style.access": "true",
-    "spark.hadoop.fs.s3a.fast.upload": "true",
-    "spark.hadoop.fs.s3a.connection.maximum": "200",
-    # Iceberg catalog setting
+
     "spark.sql.catalog.iceberg": "org.apache.iceberg.spark.SparkCatalog",
-    "spark.sql.catalog.iceberg.type": "hadoop",
-    # "spark.sql.catalog.iceberg.type": "hive",
-    # "spark.sql.catalog.iceberg.uri": "thrift://localhost:9083",
-    "spark.sql.catalog.iceberg.warehouse": f"{SPARK_PARQUET_WAREHOUSE}",
-    "spark.sql.extensions": "org.apache.iceberg.spark.extensions.IcebergSparkSessionExtensions"
+    "spark.sql.catalog.iceberg.catalog-impl": "org.apache.iceberg.rest.RESTCatalog",
+    "spark.sql.catalog.iceberg.uri": "http://iceberg-rest:8181",
+    "spark.sql.catalog.iceberg.warehouse": SPARK_PARQUET_WAREHOUSE,
+    "spark.sql.extensions": "org.apache.iceberg.spark.extensions.IcebergSparkSessionExtensions",
+    "spark.sql.catalog.iceberg.io-impl": "org.apache.iceberg.aws.s3.S3FileIO",
+    "spark.sql.catalog.iceberg.s3.endpoint": "https://s3.ap-northeast-2.amazonaws.com",
+    "spark.sql.catalog.iceberg.s3.region": "ap-northeast-2",
+    "spark.sql.catalog.iceberg.s3.path-style-access": "true",
+    "spark.sql.catalog.iceberg.s3.access-key-id": AWS_ACCESS_KEY_ID,
+    "spark.sql.catalog.iceberg.s3.secret-access-key": AWS_SECRET_ACCESS_KEY
 }
 
 
 def check_silver_file_count(**context):
     # TODO : activate before deploying app!
-    # prev_date = macros.ds_add(context["ds"], -1)
-    prev_date = now(kst).format("YYYY-MM-DD")
+    prev_date = macros.ds_add(context["ds"], -1)
+    # prev_date = now(kst).format("YYYY-MM-DD")
     prefix = f"iceberg/silver/webtoon_user_session_events/data/datetime_day={prev_date}/"
 
     s3 = S3Hook(aws_conn_id="aws_default")
@@ -94,10 +90,9 @@ with DAG (
         task_id="gold_user_daily_metrics",
         application="/opt/workspace/src/spark/gold_user_daily_metrics.py",
         conn_id="spark_default",
-        packages=f"{SPARK_PACKAGES}",
         application_args=[
-            # "--snapshot_date", "{{ macros.ds_add(ds, -1) }}"
-            "--snapshot_date", "{{ ds }}"
+            "--snapshot_date", "{{ macros.ds_add(ds, -1) }}"
+            # "--snapshot_date", "{{ ds }}"
         ],
         conf=SPARK_APP_CONF,
         verbose=True
@@ -107,10 +102,9 @@ with DAG (
         task_id="gold_webtoon_episode_daily_metrics",
         application="/opt/workspace/src/spark/gold_webtoon_episode_daily_metrics.py",
         conn_id="spark_default",
-        packages=f"{SPARK_PACKAGES}",
         application_args=[
-            # "--snapshot_date", "{{ macros.ds_add(ds, -1) }}"
-            "--snapshot_date", "{{ ds }}"
+            "--snapshot_date", "{{ macros.ds_add(ds, -1) }}"
+            # "--snapshot_date", "{{ ds }}"
         ],
         conf=SPARK_APP_CONF,
         verbose=True
@@ -120,10 +114,9 @@ with DAG (
         task_id="gold_webtoon_daily_metrics",
         application="/opt/workspace/src/spark/gold_webtoon_daily_metrics.py",
         conn_id="spark_default",
-        packages=f"{SPARK_PACKAGES}",
         application_args=[
-            # "--snapshot_date", "{{ macros.ds_add(ds, -1) }}"
-            "--snapshot_date", "{{ ds }}"
+            "--snapshot_date", "{{ macros.ds_add(ds, -1) }}"
+            # "--snapshot_date", "{{ ds }}"
         ],
         conf=SPARK_APP_CONF,
         verbose=True
@@ -133,10 +126,9 @@ with DAG (
         task_id="gold_platform_device_daily_metrics",
         application="/opt/workspace/src/spark/gold_platform_device_daily_metrics.py",
         conn_id="spark_default",
-        packages=f"{SPARK_PACKAGES}",
         application_args=[
-            # "--snapshot_date", "{{ macros.ds_add(ds, -1) }}"
-            "--snapshot_date", "{{ ds }}"
+            "--snapshot_date", "{{ macros.ds_add(ds, -1) }}"
+            # "--snapshot_date", "{{ ds }}"
         ],
         conf=SPARK_APP_CONF,
         verbose=True
@@ -146,10 +138,9 @@ with DAG (
         task_id="gold_country_daily_metrics",
         application="/opt/workspace/src/spark/gold_country_daily_metrics.py",
         conn_id="spark_default",
-        packages=f"{SPARK_PACKAGES}",
         application_args=[
-            # "--snapshot_date", "{{ macros.ds_add(ds, -1) }}"
-            "--snapshot_date", "{{ ds }}"
+            "--snapshot_date", "{{ macros.ds_add(ds, -1) }}"
+            # "--snapshot_date", "{{ ds }}"
         ],
         conf=SPARK_APP_CONF,
         verbose=True
