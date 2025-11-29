@@ -34,9 +34,6 @@ raw_event_schema = StructType([
 if __name__ == "__main__":
     ss = SparkSession.builder \
                     .appName("BronzeLoadRawDataJob") \
-                    .config("spark.sql.catalog.iceberg", "org.apache.iceberg.spark.SparkCatalog") \
-                    .config("spark.sql.catalog.iceberg.type", "hadoop") \
-                    .config("spark.sql.catalog.iceberg.warehouse", f"{SPARK_PARQUET_WAREHOUSE}") \
                     .getOrCreate()
     
     ss.sparkContext.setLogLevel("WARN")
