@@ -417,7 +417,9 @@ services:
     restart: always
 
   grafana:
-    image: grafana/grafana:latest
+    build:
+      context: ./docker/grafana
+      dockerfile: Dockerfile
     container_name: grafana
     ports:
       - "3000:3000"
