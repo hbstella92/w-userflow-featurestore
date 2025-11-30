@@ -421,8 +421,13 @@ services:
     container_name: grafana
     ports:
       - "3000:3000"
+    environment:
+      GF_SERVER_HTTP_ADDR: 0.0.0.0
+      GF_SERVER_HTTP_PORT: 3000
     networks:
       - mynetwork
+    volumes:
+      - grafana_db:/var/lib/grafana
     restart: always
 
   # dbt:
@@ -450,3 +455,4 @@ volumes:
   pg_data:
   airflow_logs:
   airflow_plugins:
+  grafana_db:
