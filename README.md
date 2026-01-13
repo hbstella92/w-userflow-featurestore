@@ -5,6 +5,7 @@ This project is an MVP focused on designing a simulated event-driven user behavi
 The goal is to explore data modeling, failure-aware design, and feature construction in streaming + batch hybrid environments, rather than production-level optimization or hard guarantees.
 <br>
 <br>
+<br>
 
 ## Motivation
 User behavior data arrives as streaming events that can be unordered and duplicated in real-world systems.
@@ -46,17 +47,18 @@ Each event includes:
 <br>
 
 ## Key Design Decisions
-### 1. Snapshot-based consistency reasoning with Iceberg
+#### 1. Snapshot-based consistency reasoning with Iceberg
 Iceberg is used as the table format to reason about data consistency under failure and retry scenarios, allowing recovery decisions to be made without blindly trusting incremental results.
 
-### 2. Session-level behavior feature modeling
+#### 2. Session-level behavior feature modeling
 Session-level aggregates are explicitly constructed during batch processing, as session boundaries provide a more meaningful basis for behavior analysis than individual events.
 
-### 3. Separation of streaming and batch workloads
+#### 3. Separation of streaming and batch workloads
 Streaming job is kept intentionally simple, focusing on event ingestion without feature logic, while batch jobs handle feature aggregation. This separation improves pipeline stability and simplifies reprocessing considerations.
 
-### 4. Orchestrated execution and observability
+#### 4. Orchestrated execution and observability
 Airflow is used to control batch execution flow, with Slack notifications integrated for basic observability and failure awareness.
+<br>
 <br>
 <br>
 
@@ -90,6 +92,7 @@ For this MVP, DAGs are triggered manually in the following order to make executi
     (These DAGs are configured to run once upstream data becomes available.)
 
 This manual execution flow is intentional, as the focus of the project is on validating pipeline design and data flow separation rather than full automation.
+<br>
 <br>
 <br>
 
