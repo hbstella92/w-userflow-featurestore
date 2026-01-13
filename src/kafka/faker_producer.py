@@ -20,11 +20,6 @@ KAFKA_TOPIC = "webtoon_user_events_v2"
 SCROLL_MIN, SCROLL_MAX = 1, 8
 SLEEP_BETWEEN_EVENTS = 0.3                    # (단위: sec)
 
-# SR_URL = "http://localhost:28081"
-# sr_client = SchemaRegistryClient({"url": SR_URL})
-# value_schema = open("schemas/webtoon_user_events_v1.avsc").read()
-# value_serializer = AvroSerializer(sr_client, value_schema)
-
 PRODUCER_CONFIG = {
     "bootstrap.servers": "localhost:9092",
     "enable.idempotence": True,             # 재시도 상황에서도 중복 없이, 순서 보존되게 전송 (시퀀스 번호로 중복 방지함)
@@ -32,8 +27,6 @@ PRODUCER_CONFIG = {
     "linger.ms": 0,                         # 지정한 시간동안 배치 전송
     "retries": 3,
     "partitioner": "murmur2",
-    # "key.serializer": StringSerializer("utf_8"),
-    # "value.serializer": value_serializer
 }
 
 fake = Faker()
@@ -55,13 +48,14 @@ NETWORKS = ["wifi", "4g", "5g", "offline"]
 
 
 def get_country_code(user_id: int) -> str:
-    random.seed(user_id)
-    return random.choices(COUNTRIES, weights=COUNTRY_WEIGHT, k=1)[0]
+    rng = random.Random(user_id)
+    return rng.choices(COUNTRIES, weights=COUNTRY_WEIGHT, k=1)[0]
 
 
 def make_session_profile(user_id: int | None = None):
+    user_id = user_id if user_id is not None else fake.random_int(min=1, max=100)
     return {
-        "user_id": user_id if user_id is not None else fake.random_int(min=1, max=100),
+        "user_id": user_id,
         "country": get_country_code(user_id),
         "platform": random.choice(PLATFORMS),
         "device": random.choice(DEVICES),
@@ -208,7 +202,6 @@ def parse_args():
 def main():
     args = parse_args()
 
-    # producer = SerializingProducer(PRODUCER_CONFIG)
     producer = Producer(PRODUCER_CONFIG)
 
     if not args.binge:
@@ -222,8 +215,6 @@ def main():
             for event in session_events:
                 producer.produce(
                     topic=KAFKA_TOPIC,
-                    # key=session_id,
-                    # value=event,
                     key=session_id.encode("utf-8"),            # 파티션 내의 순서 보장을 위해
                     value=json.dumps(event, ensure_ascii=False).encode("utf-8"),
                     on_delivery=delivery_report
@@ -232,7 +223,6 @@ def main():
                 time.sleep(SLEEP_BETWEEN_EVENTS)
         
         producer.flush()                                # 큐에 남은 메세지를 모두 전송 완료할 때까지 대기 (유실 없이 마무리하기 위함)
-        print("DONE")
         return
     
     for _ in range(args.sessions):
@@ -247,8 +237,6 @@ def main():
             for event in session_events:
                 producer.produce(
                     topic=KAFKA_TOPIC,
-                    # key=session_id,
-                    # value=event,
                     key=str(session_id).encode("utf-8"),
                     value=json.dumps(event, ensure_ascii=False).encode("utf-8"),
                     on_delivery=delivery_report
@@ -259,7 +247,6 @@ def main():
             time.sleep(random.uniform(0.5, 2.0))
 
     producer.flush()
-    print("DONE")
     return
 
 
