@@ -27,7 +27,7 @@ Kafka (simulated events)
                 -> Iceberg feature tables on S3 (gold)
                     -> Trino -> Grafana
 ```
-* Streaming ingestion handles simulated user events, while batch jobs generate session-level and daily feature tables.
+> Streaming ingestion handles simulated user events, while batch jobs generate session-level and daily feature tables.
 <br>
 <br>
 
@@ -73,13 +73,13 @@ Airflow is used to control batch execution flow, with Slack notifications integr
 
 ## How to Run
 ### Start infrastructure
-docker compose build
-docker compose up -d airflow-init
+docker compose build<br>
+docker compose up -d airflow-init<br>
 docker compose up -d
 
 ### Run Kafka producer
-source .venv/bin/activate
-python src/kafka/faker_producer.py --sessions 1000
+source .venv/bin/activate<br>
+python src/kafka/faker_producer.py --sessions 10000
 
 ### Run streaming ingestion and batch feature aggregation
 
@@ -98,7 +98,7 @@ This manual execution flow is intentional, as the focus of the project is on val
 
 ## What This Project is NOT
 * Not a production-ready system
-* Not a fully documented open-source project
+* Not a fully documented open-source project<br>
 This repository intentionally focuses on **design validation and decision-making**.
 <br>
 <br>
