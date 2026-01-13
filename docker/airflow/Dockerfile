@@ -17,7 +17,7 @@ RUN tar -xzf /tmp/spark.tgz -C /opt/ && \
 # Spark & Java environment variables
 ENV SPARK_HOME=/opt/spark
 ENV JAVA_HOME=/usr/lib/jvm/java-17-openjdk-amd64
-ENV PATH="${SPARK_HOME}/bin:${JAVA_HOME}/bin:${PATH}"
+ENV PATH="/home/airflow/.local/bin:/usr/local/bin:${SPARK_HOME}/bin:${JAVA_HOME}/bin:${PATH}"
 
 ENV PYTHONPATH="$SPARK_HOME/python:$SPARK_HOME/python/lib/py4j-0.10.9.7-src.zip"
 
@@ -69,4 +69,14 @@ RUN groupadd -g 50000 airflow || true && \
 RUN chown -R airflow:airflow /opt/spark /usr/lib/jvm/java-17-openjdk-amd64
 
 USER airflow
-RUN pip install --no-cache-dir apache-airflow-providers-apache-spark
+
+# Fix Airflow version to be 2.10.2
+ARG AIRFLOW_VERSION=2.10.2
+ARG PYTHON_VERSION=3.10
+ENV AIRFLOW_CONSTRAINT="https://raw.githubusercontent.com/apache/airflow/constraints-${AIRFLOW_VERSION}/constraints-${PYTHON_VERSION}.txt"
+
+# Install constraint provider to prevent Airflow version to be 3.x
+RUN pip install --no-cache-dir "apache-airflow==${AIRFLOW_VERSION}" --constraint "${AIRFLOW_CONSTRAINT}" && \
+    pip install --no-cache-dir apache-airflow-providers-apache-spark --constraint "${AIRFLOW_CONSTRAINT}"
+
+RUN command -v airflow && airflow version
