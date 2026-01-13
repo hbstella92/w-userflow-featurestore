@@ -9,17 +9,10 @@ ubuntu@140.238.144.177
 # 로그
 airflow/logs/
 airflow/plugins/
-dbt/logs/
 
 # spark
 spark/data/
 spark/checkpoints/
-
-# dbt
-dbt/.user.yml
-dbt/dbt_packages/
-dbt/package-lock.yml
-dbt/target/
 
 *.pyc
 *.tar

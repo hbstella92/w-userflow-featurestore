@@ -432,27 +432,6 @@ services:
       - grafana_db:/var/lib/grafana
     restart: always
 
-  # dbt:
-  #   build:
-  #     context: ./docker/dbt
-  #     dockerfile: Dockerfile
-  #   container_name: dbt
-  #   hostname: dbt
-  #   depends_on:
-  #     - spark-thrift-server
-  #   env_file:
-  #     - .env
-  #   environment:
-  #     - DBT_PROFILES_DIR=/opt/dbt
-  #     - AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}
-  #     - AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}
-  #     - AWS_REGION=ap-northeast-2
-  #   volumes:
-  #     - ./dbt:/opt/dbt
-  #   command: bash -c "dbt deps && sleep infinity"
-  #   networks:
-  #     - mynetwork
-
 volumes:
   pg_data:
   airflow_logs:

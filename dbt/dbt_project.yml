@@ -1,9 +1,0 @@
-name: "w_userflow_featurestore"
-version: "1.0.0"
-config-version: 2
-
-profile: "w_userflow_featurestore"
-
-model-paths: ["models"]
-target-path: "target"
-clean-targets: ["target"]
