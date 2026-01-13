@@ -80,20 +80,12 @@ Kafka 기반 실시간 이벤트 수집, PySpark 상태 관리 로직, 실시간
 - 배치 Feature Store (Hive)
 - session/user/episode 단위 feature 제공
 
-### 4. Feature 모델링 (dbt)
+### 4. Feature 모델링
 - session -> user / episode 단위 집계
-- episode_metadata 조인 후, 최종 feature 생성
 
 ---
 
-### 5. 데이터 품질 검증 (Great Expectations)
-- Kafka raw 이벤트 검증
-- feature 값 품질 검증 (Null, 중복, 범위/순서 오류)
-- 실패 시 Slack 알림
-
----
-
-### 6. 파이프라인 자동화 및 모니터링 (Airflow)
+### 5. 파이프라인 자동화 및 모니터링 (Airflow)
 - feature 집계/품질 검증 자동화
 - 파이프라인 상태 모니터링
 
