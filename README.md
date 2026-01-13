@@ -25,6 +25,7 @@ Kafka (simulated events)
                     -> Trino -> Grafana
 
 * Streaming ingestion handles simulated user events, while batch jobs generate session-level and daily feature tables.
+```
 
 
 ## Data Model
