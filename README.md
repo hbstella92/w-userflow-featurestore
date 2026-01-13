@@ -3,7 +3,8 @@
 This project is an MVP focused on designing a simulated event-driven user behavior data pipeline using Kafka, Spark Structured Streaming, Apache Iceberg, AWS S3, Airflow, Trino, Grafana, Docker.
 
 The goal is to explore data modeling, failure-aware design, and feature construction in streaming + batch hybrid environments, rather than production-level optimization or hard guarantees.
-
+<br>
+<br>
 
 ## Motivation
 User behavior data arrives as streaming events that can be unordered and duplicated in real-world systems.
@@ -13,7 +14,8 @@ This project explores, from a design perspective, where non-determinism can be i
 The goal of this MVP is not to guarantee strict determinism, but to reason about trade-offs in reprocessing and feature generation in a streaming + batch architecture.
 
 > Note: Input events are simulated using a Faker-based Kafka producer
-
+<br>
+<br>
 
 ## Architecture Overview
 ```
@@ -25,7 +27,8 @@ Kafka (simulated events)
                     -> Trino -> Grafana
 ```
 * Streaming ingestion handles simulated user events, while batch jobs generate session-level and daily feature tables.
-
+<br>
+<br>
 
 ## Data Model
 ### Event Types
@@ -39,7 +42,8 @@ Each event includes:
 * timestamp (UTC + local timezone)
 * behavioral metrics (scroll ratio, dwell time)
 * user environment (country, platform, device, browser, network_type)
-
+<br>
+<br>
 
 ## Key Design Decisions
 ### 1. Snapshot-based consistency reasoning with Iceberg
@@ -53,7 +57,8 @@ Streaming job is kept intentionally simple, focusing on event ingestion without 
 
 ### 4. Orchestrated execution and observability
 Airflow is used to control batch execution flow, with Slack notifications integrated for basic observability and failure awareness.
-
+<br>
+<br>
 
 ## Idempotency & Reprocessing
 * This MVP does not attempt to fully guarantee idempotency, but explicitly documents how duplicate events would be handled in a production setting.
@@ -61,7 +66,8 @@ Airflow is used to control batch execution flow, with Slack notifications integr
 **Production-ready alternatives considered:**
 * Partition overwrite during batch recomputation
 * Iceberg MERGE/UPSERT
-
+<br>
+<br>
 
 ## How to Run
 ### Start infrastructure
@@ -84,20 +90,23 @@ For this MVP, DAGs are triggered manually in the following order to make executi
     (These DAGs are configured to run once upstream data becomes available.)
 
 This manual execution flow is intentional, as the focus of the project is on validating pipeline design and data flow separation rather than full automation.
-
+<br>
+<br>
 
 ## What This Project is NOT
 * Not a production-ready system
 * Not a fully documented open-source project
 This repository intentionally focuses on **design validation and decision-making**.
-
+<br>
+<br>
 
 ## Takeaways
 This project highlighted that:
 * Streaming pipelines should be designed assuming failures and retries will happen.
 * Batch aggregation provides a safer point for recomputation than streaming job.
 * Session-level aggregation provides a more meaningful unit for user behavior analysis than individual events.
-
+<br>
+<br>
 
 ## Tech Stack
 * Kafka
