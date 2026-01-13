@@ -44,7 +44,6 @@ connexion==2.14.2
 cron-descriptor==1.4.5
 croniter==6.0.0
 cryptography==45.0.5
-dbt==1.0.0.40.5
 debugpy==1.8.15
 decorator==5.2.1
 defusedxml==0.7.1
@@ -75,7 +74,6 @@ fsspec==2025.7.0
 future==1.0.0
 google-re2==1.1.20250722
 googleapis-common-protos==1.70.0
-great-expectations==0.18.14
 grpcio==1.74.0
 gunicorn==23.0.0
 h11==0.16.0
