@@ -10,8 +10,8 @@ Kafka 기반 스트리밍 수집, Spark Structured Streaming을 활용한 집계
 Apache Iceberg를 중심으로 한 Bronze-Silver-Gold 메달리온 아키텍처 설계,
 Airflow 기반 배치 오케스트레이션과 Trino + Grafana를 통한 Feature 조회까지
 기존에 다뤄왔던 도메인과는 다른 **서비스형 이벤트 데이터 처리 경험**을 쌓기 위해 진행했습니다.
-
----
+<br>
+<br>
 
 ## 2. 프로젝트를 만든 이유 (Why)
 
@@ -25,8 +25,8 @@ Airflow 기반 배치 오케스트레이션과 Trino + Grafana를 통한 Feature
     - Kafka + Spark Structured Streaming 기반 이벤트 수집
     - Apache Iceberg 기반 레이크 테이블 관리
     - Trino + Grafana를 통한 Feature 조회 및 시각화
-
----
+<br>
+<br>
 
 ## 3. 전체 데이터 흐름 (Data Flow)
 ```
@@ -48,34 +48,34 @@ Trino
 ↓
 Grafana
 ```
-
----
+<br>
+<br>
 
 ## 4. 아키텍처 구성 및 역할 (Architecture)
 
 ### 주요 구성 요소
-- **Kafka**
+- **Kafka**<br>
     유저 행동 이벤트 수집
 
-- **Spark Structured Streaming**
-    실시간 유저 이벤트를 처리하여 Bronze 레이어에 적재
+- **Spark Structured Streaming**<br>
+    실시간 유저 이벤트를 처리하여 Bronze 레이어에 적재<br>
     Airflow DAG에서 trigger하여 실행
 
-- **Apache Iceberg + AWS S3**
-    대규모 이벤트 및 Feature 테이블 저장
+- **Apache Iceberg + AWS S3**<br>
+    대규모 이벤트 및 Feature 테이블 저장<br>
     Snapshot 기반 증분 처리 및 재처리 지원
 
-- **Apache Airflow**
-    Silver / Gold 배치 Spark Job 파이프라인 오케스트레이션
+- **Apache Airflow**<br>
+    Silver / Gold 배치 Spark Job 파이프라인 오케스트레이션<br>
     데이터 상태 기반 실행 제어
 
-- **Trino**
+- **Trino**<br>
     Feature 조회용 쿼리 엔진
 
-- **Grafana**
+- **Grafana**<br>
     Feature 지표 시각화
-
----
+<br>
+<br>
 
 ## 5. 레이어별 데이터 설계 (How)
 
@@ -83,8 +83,7 @@ Grafana
 - Kafka 이벤트를 Spark Structured Streaming으로 수집
 - 최소한의 가공(datetime 컬럼 추가)만 수행
 - 30초 단위 micro-batch로 Iceberg 테이블에 append
-
----
+<br>
 
 ### Silver - Cleansed & Sessionized Events
 - Bronze 테이블을 입력으로 사용
@@ -94,19 +93,18 @@ Grafana
     - session 단위로 이벤트를 묶어 세션 단위 레코드 생성
     - 완독 / 이탈 / 타임아웃 등 session 상태 판별
 
-**설계 배경**
-서비스 도메인에서는 개별 이벤트보다
-**session 단위가 사용자 행동 분석에 더 의미 있는 단위**이기에,
+**설계 배경**<br>
+서비스 도메인에서는 개별 이벤트보다<br>
+**session 단위가 사용자 행동 분석에 더 의미 있는 단위**이기에,<br>
 Gold 집계 이전에 session 단위로 데이터를 정리했습니다.
-
----
+<br>
 
 ### Gold - Feature Tables
 - Silver 레이어를 기반으로 Feature 생성
 - Session 단위 유저 행동 Feature 및 집계 지표 적재
 - 분석 및 시각화에 사용
-
----
+<br>
+<br>
 
 ## 6. Iceberg Snapshot 기반 증분 처리 설계
 
@@ -123,49 +121,49 @@ Gold 집계 이전에 session 단위로 데이터를 정리했습니다.
 
 이 방식을 통해
 증분 처리의 효율성과 전체 재처리 안전성을 함께 확보했습니다.
-
----
+<br>
+<br>
 
 ## 7. Silver 사전 검증 기반 Gold 실행 제어
 
-Gold Feature 집계 전에
+Gold Feature 집계 전에<br>
 **Silver 데이터가 정상적으로 적재되었는지 사전 검증하는 task**를 추가했습니다.
 
 - Silver 테이블의 전일 적재 결과(data file 수)를 기준으로 적재 완료 여부 확인
 - 조건을 만족하지 않으면 Gold 집계 task 실행 중단
 
-이를 통해
+이를 통해<br>
 불완전한 Silver 데이터를 기반으로 Feature 지표가 생성되는 상황을 방지했습니다.
-
----
+<br>
+<br>
 
 ## 8. 기술 선택 이유 (Why this stack)
 - **Kafka**: 대량 이벤트 수집
 - **Spark Structured Streaming**: 스트리밍과 배치 연계에 용이
-- **Apache Iceberg**: Snapshot 기반 증분 처리 및 대규모 테이블 관리
-  향후 Time Travel(특정 snapshot 조회/복구) 활용도 고려
+- **Apache Iceberg**: Snapshot 기반 증분 처리 및 대규모 테이블 관리<br>
+  향후 Time Travel 등 snapshot 메타데이터 활용 측면에서 확장성이 높은 테이블 포맷으로 판단하여 채택
 - **Airflow**: DAG 기반 task 파이프라인 제어
 - **Trino**: Iceberg 기반 Feature를 Grafana와 연동하기 위한 쿼리 엔진
 - **Grafana**: Feature 지표 시각화
-
----
+<br>
+<br>
 
 ## 9. 트러블슈팅 사례
-1)
 
----
+<br>
+<br>
 
 ## 10. 한계 및 병목 (Trade-offs & Limitations)
 * 실시간 Feature 제공 불가 (배치 기반)
 * Snapshot 메타데이터 관리 복잡성 증가
 * 데이터 규모 증가 시 Silver → Gold 배치 비용 증가
-
----
+<br>
+<br>
 
 ## 11. 정리
 
-이 프로젝트는
-**새로운 도메인과 최신 기술 스택을 실제로 사용해보며,
+이 프로젝트는<br>
+**새로운 도메인과 최신 기술 스택을 실제로 사용해보며,<br>
 서비스형 이벤트 데이터 처리 전반을 경험하는 것**을 목표로 했습니다.
 
 * 실시간/배치 혼합 처리 구조에 대한 설계 판단
