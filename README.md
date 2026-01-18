@@ -83,6 +83,8 @@ Grafana
 - 최소한의 가공(datetime 컬럼 추가)만 수행
 - 30초 단위 micro-batch로 Iceberg 테이블에 append
 
+<br>
+
 ### Silver - Cleansed & Sessionized Events
 - Bronze 테이블을 입력으로 사용
 - 다음 작업 수행
@@ -91,12 +93,11 @@ Grafana
     - session 단위로 이벤트를 묶어 세션 단위 레코드 생성
     - 완독 / 이탈 / 타임아웃 등 session 상태 판별
 
-<br>
-
 **설계 배경**<br>
 서비스 도메인에서는 개별 이벤트보다<br>
 **session 단위가 사용자 행동 분석에 더 의미 있는 단위**이기에,<br>
 Gold 집계 이전에 session 단위로 데이터를 정리했습니다.
+
 <br>
 
 ### Gold - Feature Tables
