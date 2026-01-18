@@ -1,21 +1,23 @@
 # **w-userflow-featurestore**
+<br>
 
-## 1. 프로젝트 개요 (What)
+## 1. 프로젝트 개요
 
-본 프로젝트는
-**실시간 유저 행동 이벤트를 수집하면서도,
+본 프로젝트는<br>
+**실시간 유저 행동 이벤트를 수집하면서도,<br>
 데이터 정합성과 신뢰성을 고려한 Feature 생성 파이프라인 구조**를 설계/구현한 개인 프로젝트입니다.
 
-Kafka 기반 스트리밍 수집, Spark Structured Streaming을 활용한 집계 및 적재,
-Apache Iceberg를 중심으로 한 Bronze-Silver-Gold 메달리온 아키텍처 설계,
-Airflow 기반 배치 오케스트레이션과 Trino + Grafana를 통한 Feature 조회까지
+Kafka 기반 스트리밍 수집, Spark Structured Streaming을 활용한 집계 및 적재,<br>
+Apache Iceberg를 중심으로 한 Bronze-Silver-Gold 메달리온 아키텍처 설계,<br>
+Airflow 기반 배치 오케스트레이션과 Trino + Grafana를 통한 Feature 조회까지<br>
 기존에 다뤄왔던 도메인과는 다른 **서비스형 이벤트 데이터 처리 경험**을 쌓기 위해 진행했습니다.
 <br>
 <br>
+<br>
 
-## 2. 프로젝트를 만든 이유 (Why)
+## 2. 프로젝트 목적
 
-이 프로젝트는 다음과 같은 목적에서 출발했습니다.
+이 프로젝트는 다음과 같은 목적에서 출발했습니다.<br>
 
 1. **도메인이 다른 데이터 경험**
     - 웹툰 서비스와 같은 실제 서비스 도메인의 유저 행동 데이터
@@ -28,7 +30,7 @@ Airflow 기반 배치 오케스트레이션과 Trino + Grafana를 통한 Feature
 <br>
 <br>
 
-## 3. 전체 데이터 흐름 (Data Flow)
+## 3. Data Flow
 ```
 Simulated User Events
 ↓
@@ -51,7 +53,7 @@ Grafana
 <br>
 <br>
 
-## 4. 아키텍처 구성 및 역할 (Architecture)
+## 4. Architecture
 
 ### 주요 구성 요소
 - **Kafka**<br>
@@ -77,13 +79,12 @@ Grafana
 <br>
 <br>
 
-## 5. 레이어별 데이터 설계 (How)
+## 5. Layer별 설계
 
 ### Bronze - Raw Events
 - Kafka 이벤트를 Spark Structured Streaming으로 수집
 - 최소한의 가공(datetime 컬럼 추가)만 수행
 - 30초 단위 micro-batch로 Iceberg 테이블에 append
-<br>
 
 ### Silver - Cleansed & Sessionized Events
 - Bronze 테이블을 입력으로 사용
@@ -92,6 +93,8 @@ Grafana
     - not null 처리 및 타입 캐스팅
     - session 단위로 이벤트를 묶어 세션 단위 레코드 생성
     - 완독 / 이탈 / 타임아웃 등 session 상태 판별
+
+<br>
 
 **설계 배경**<br>
 서비스 도메인에서는 개별 이벤트보다<br>
@@ -119,8 +122,9 @@ Gold 집계 이전에 session 단위로 데이터를 정리했습니다.
     - 관계가 맞을 경우: incremental read
     - 관계가 아닐 경우: full read
 
-이 방식을 통해
+이 방식을 통해<br>
 증분 처리의 효율성과 전체 재처리 안전성을 함께 확보했습니다.
+<br>
 <br>
 <br>
 
@@ -136,24 +140,25 @@ Gold Feature 집계 전에<br>
 불완전한 Silver 데이터를 기반으로 Feature 지표가 생성되는 상황을 방지했습니다.
 <br>
 <br>
+<br>
 
-## 8. 기술 선택 이유 (Why this stack)
+## 8. 기술 선택 이유
 - **Kafka**: 대량 이벤트 수집
 - **Spark Structured Streaming**: 스트리밍과 배치 연계에 용이
 - **Apache Iceberg**: Snapshot 기반 증분 처리 및 대규모 테이블 관리<br>
-  향후 Time Travel 등 snapshot 메타데이터 활용 측면에서 확장성이 높은 테이블 포맷으로 판단하여 채택
+  (향후 Time Travel 등 snapshot 메타데이터 활용 측면에서 확장성이 높은 테이블 포맷으로 판단하여 채택)
 - **Airflow**: DAG 기반 task 파이프라인 제어
 - **Trino**: Iceberg 기반 Feature를 Grafana와 연동하기 위한 쿼리 엔진
 - **Grafana**: Feature 지표 시각화
 <br>
 <br>
 
-## 9. 트러블슈팅 사례
+## 9. 주요 트러블슈팅 사례
 
 <br>
 <br>
 
-## 10. 한계 및 병목 (Trade-offs & Limitations)
+## 10. 한계점
 * 실시간 Feature 제공 불가 (배치 기반)
 * Snapshot 메타데이터 관리 복잡성 증가
 * 데이터 규모 증가 시 Silver → Gold 배치 비용 증가
