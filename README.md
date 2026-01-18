@@ -1,7 +1,4 @@
 # **w-userflow-featurestore**
-<br>
-
-## 1. 프로젝트 개요
 
 본 프로젝트는<br>
 **실시간 유저 행동 이벤트를 수집하면서도,<br>
@@ -15,7 +12,7 @@ Airflow 기반 배치 오케스트레이션과 Trino + Grafana를 통한 Feature
 <br>
 <br>
 
-## 2. 프로젝트 목적
+## 1. 프로젝트 목적
 
 이 프로젝트는 다음과 같은 목적에서 출발했습니다.<br>
 
@@ -30,7 +27,7 @@ Airflow 기반 배치 오케스트레이션과 Trino + Grafana를 통한 Feature
 <br>
 <br>
 
-## 3. Data Flow
+## 2. Data Flow
 ```
 Simulated User Events
 ↓
@@ -53,7 +50,7 @@ Grafana
 <br>
 <br>
 
-## 4. Architecture
+## 3. Architecture
 
 ### 주요 구성 요소
 - **Kafka**<br>
@@ -79,7 +76,7 @@ Grafana
 <br>
 <br>
 
-## 5. Layer별 설계
+## 4. Layer별 설계
 
 ### Bronze - Raw Events
 - Kafka 이벤트를 Spark Structured Streaming으로 수집
@@ -109,7 +106,7 @@ Gold 집계 이전에 session 단위로 데이터를 정리했습니다.
 <br>
 <br>
 
-## 6. Iceberg Snapshot 기반 증분 처리 설계
+## 5. Iceberg Snapshot 기반 증분 처리 설계
 
 ### 문제
 - 매 배치마다 전체 데이터를 읽는 방식은 비효율적
@@ -128,7 +125,7 @@ Gold 집계 이전에 session 단위로 데이터를 정리했습니다.
 <br>
 <br>
 
-## 7. Silver 사전 검증 기반 Gold 실행 제어
+## 6. Silver 사전 검증 기반 Gold 실행 제어
 
 Gold Feature 집계 전에<br>
 **Silver 데이터가 정상적으로 적재되었는지 사전 검증하는 task**를 추가했습니다.
@@ -142,7 +139,7 @@ Gold Feature 집계 전에<br>
 <br>
 <br>
 
-## 8. 기술 선택 이유
+## 7. 기술 선택 이유
 - **Kafka**: 대량 이벤트 수집
 - **Spark Structured Streaming**: 스트리밍과 배치 연계에 용이
 - **Apache Iceberg**: Snapshot 기반 증분 처리 및 대규모 테이블 관리<br>
@@ -153,19 +150,19 @@ Gold Feature 집계 전에<br>
 <br>
 <br>
 
-## 9. 주요 트러블슈팅 사례
+## 8. 주요 트러블슈팅 사례
 
 <br>
 <br>
 
-## 10. 한계점
+## 9. 한계점
 * 실시간 Feature 제공 불가 (배치 기반)
 * Snapshot 메타데이터 관리 복잡성 증가
 * 데이터 규모 증가 시 Silver → Gold 배치 비용 증가
 <br>
 <br>
 
-## 11. 정리
+## 10. 정리
 
 이 프로젝트는<br>
 **새로운 도메인과 최신 기술 스택을 실제로 사용해보며,<br>
