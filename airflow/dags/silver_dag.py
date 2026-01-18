@@ -118,10 +118,8 @@ def get_snapshot_id(**context):
 
     if prev_snapshot_id and latest_snapshot_id:
         if not is_ancestor_snapshot(ss, "iceberg.bronze.webtoon_user_events_raw", int(prev_snapshot_id), int(latest_snapshot_id)):
-            print(f"[SNAPSHOT] Invalid lineage detected : prev = {prev_snapshot_id}, latest = {latest_snapshot_id}")
             print("[SNAPSHOT] Lineage mismatch detected -> performing full read (start_snapshot_id = None)")
             prev_snapshot_id = None
-            # raise AirflowFailException(f"[SNAPSHOT] Invalid lineage detected : prev={prev_snapshot_id}, latest={latest_snapshot_id}")
 
     context["ti"].xcom_push(key="prev_snapshot_id", value=prev_snapshot_id)
     context["ti"].xcom_push(key="latest_snapshot_id", value=latest_snapshot_id)

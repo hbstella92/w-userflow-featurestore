@@ -8,9 +8,7 @@ from pendulum import timezone, now
 
 
 kst = timezone("Asia/Seoul")
-# TODO : activate before deploying app!
-# TOTAL_FILE_COUNT_PER_DAILY = 144
-TOTAL_FILE_COUNT_PER_DAILY = 1
+TOTAL_FILE_COUNT_PER_DAILY = 140
 
 
 SPARK_PARQUET_WAREHOUSE = os.getenv("SPARK_PARQUET_WAREHOUSE")
@@ -49,9 +47,7 @@ SPARK_APP_CONF = {
 
 
 def check_silver_file_count(**context):
-    # TODO : activate before deploying app!
     prev_date = macros.ds_add(context["ds"], -1)
-    # prev_date = now(kst).format("YYYY-MM-DD")
     prefix = f"iceberg/silver/webtoon_user_session_events/data/datetime_day={prev_date}/"
 
     s3 = S3Hook(aws_conn_id="aws_default")
