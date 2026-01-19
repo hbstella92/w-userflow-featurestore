@@ -22,11 +22,11 @@ Airflow 기반 배치 오케스트레이션과 Trino + Grafana를 통한 Feature
 
 특히 다음 질문에 대한 답을 구조로 구성해보았습니다.
 
-- 스트리밍 + 배치 혼합 환경에서 정합성을 어떻게 보장할 것인가?
+- 스트리밍 + 배치 혼합 환경에서 정합성을 어떻게 보장할 것인가?<br>
     -> Raw 데이터 보존 + 정합성 책임 분리
-- 증분 처리의 효율성과 전체 재처리 안정성을 어떻게 양립시킬 것인가?
+- 증분 처리의 효율성과 전체 재처리 안정성을 어떻게 양립시킬 것인가?<br>
     -> Iceberg snapshot 기반 조건부 증분 처리
-- 운영 중 장애 발생 시, 어떤 단위까지 복구 가능해야 하는가?
+- 운영 중 장애 발생 시, 어떤 단위까지 복구 가능해야 하는가?<br>
     -> Session 단위 복구 전략
 <br>
 <br>
@@ -165,21 +165,21 @@ Gold Feature 집계 전에<br>
 
 ## 8. 주요 트러블슈팅 사례
 
-- Spark Streaming 재시작 시 Kafka offset 중복 처리 이슈
+- Spark Streaming 재시작 시 Kafka offset 중복 처리 이슈<br>
     -> Silver 레이어에서 deduplication으로 보완
 
-- Iceberg snapshot 간 ancestor 관계가 깨진 케이스
+- Iceberg snapshot 간 ancestor 관계가 깨진 케이스<br>
     -> 전체 재처리로 자동 전환하도록 분기 처리
 <br>
 <br>
 
 ## 9. 한계점
-* 실시간 Feature 제공 불가 (배치 기반)
-    -> Low-latency serving을 위해서는
+* 실시간 Feature 제공 불가 (배치 기반)<br>
+    -> Low-latency serving을 위해서는<br>
        Kafka Streams, Flink, Online store 도입이 필요
 * Snapshot 메타데이터 관리 복잡성 증가
-* 데이터 규모 증가 시 Silver → Gold 배치 비용 증가
-    -> Partition 전략 개선 또는
+* 데이터 규모 증가 시 Silver → Gold 배치 비용 증가<br>
+    -> Partition 전략 개선 또는<br>
        Pre-aggregated Feature 도입 고려 가능
 <br>
 <br>
