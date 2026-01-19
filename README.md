@@ -11,19 +11,23 @@ Airflow 기반 배치 오케스트레이션과 Trino + Grafana를 통한 Feature
 <br>
 <br>
 <br>
+<br>
 
 ## 1. 프로젝트 목적
 
-이 프로젝트는 다음과 같은 목적에서 출발했습니다.<br>
+본 프로젝트의 핵심 목적은<br>
+"이벤트 기반 유저 데이터에서<br>
+신뢰 가능한 Feature를 안정적으로 생산하기 위한<br>
+파이프라인 설계 판단을 검증"하는 것이었습니다.<br>
 
-1. **도메인이 다른 데이터 경험**
-    - 웹툰 서비스와 같은 실제 서비스 도메인의 유저 행동 데이터
-    - "행동 이벤트" 중심 데이터 모델링 경험
+특히 다음 질문에 대한 답을 구조로 구성해보았습니다.
 
-2. **최신 데이터 스택 활용**
-    - Kafka + Spark Structured Streaming 기반 이벤트 수집
-    - Apache Iceberg 기반 레이크 테이블 관리
-    - Trino + Grafana를 통한 Feature 조회 및 시각화
+- 스트리밍 + 배치 혼합 환경에서 정합성을 어떻게 보장할 것인가?<br>
+    -> Raw 데이터 보존 + 정합성 책임 분리
+- 증분 처리의 효율성과 전체 재처리 안정성을 어떻게 양립시킬 것인가?<br>
+    -> Iceberg snapshot 기반 조건부 증분 처리
+- 운영 중 장애 발생 시, 어떤 단위까지 복구 가능해야 하는가?<br>
+    -> Session 단위 복구 전략
 <br>
 <br>
 
@@ -54,7 +58,8 @@ Grafana
 
 ### 주요 구성 요소
 - **Kafka**<br>
-    유저 행동 이벤트 수집
+    유저 행동 이벤트 수집<br>
+    Producer 장애 시 데이터 유실을 최소화하기 위한 버퍼 역할
 
 - **Spark Structured Streaming**<br>
     실시간 유저 이벤트를 처리하여 Bronze 레이어에 적재<br>
@@ -81,6 +86,7 @@ Grafana
 ### Bronze - Raw Events
 - Kafka 이벤트를 Spark Structured Streaming으로 수집
 - 최소한의 가공(datetime 컬럼 추가)만 수행
+- 원본 보존을 통해 재처리 가능성을 확보하기 위함
 - 30초 단위 micro-batch로 Iceberg 테이블에 append
 
 <br>
@@ -120,8 +126,14 @@ Gold 집계 이전에 session 단위로 데이터를 정리했습니다.
     - 관계가 맞을 경우: incremental read
     - 관계가 아닐 경우: full read
 
-이 방식을 통해<br>
-증분 처리의 효율성과 전체 재처리 안전성을 함께 확보했습니다.
+이 설계는 다음과 같은 실제 운영 환경을 반영하기 위해 도입되었습니다.
+
+- upstream 데이터 정정(correction)
+- 과거 데이터 backfill
+- 예기치 않은 파이프라인 재시작
+
+과 같은 상황에서는
+단순 증분 처리 가정이 쉽게 깨질 수 있기 때문입니다.
 <br>
 <br>
 <br>
@@ -153,13 +165,22 @@ Gold Feature 집계 전에<br>
 
 ## 8. 주요 트러블슈팅 사례
 
+- Spark Streaming 재시작 시 Kafka offset 중복 처리 이슈<br>
+    -> Silver 레이어에서 deduplication으로 보완
+
+- Iceberg snapshot 간 ancestor 관계가 깨진 케이스<br>
+    -> 전체 재처리로 자동 전환하도록 분기 처리
 <br>
 <br>
 
 ## 9. 한계점
-* 실시간 Feature 제공 불가 (배치 기반)
+* 실시간 Feature 제공 불가 (배치 기반)<br>
+    -> Low-latency serving을 위해서는<br>
+       Kafka Streams, Flink, Online store 도입이 필요
 * Snapshot 메타데이터 관리 복잡성 증가
-* 데이터 규모 증가 시 Silver → Gold 배치 비용 증가
+* 데이터 규모 증가 시 Silver → Gold 배치 비용 증가<br>
+    -> Partition 전략 개선 또는<br>
+       Pre-aggregated Feature 도입 고려 가능
 <br>
 <br>
 

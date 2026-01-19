@@ -103,4 +103,4 @@ if __name__ == "__main__":
 
     result_df.show(30, truncate=False)
     
-    result_df.writeTo("iceberg.gold.platform_device_daily_metrics").append()
+    result_df.writeTo("iceberg.gold.platform_device_daily_metrics").overwritePartitions()
