@@ -95,7 +95,8 @@ if __name__ == "__main__":
     bronze_df = bronze_df.filter(col("user_id").isNotNull() &
                                  col("webtoon_id").isNotNull() &
                                  col("episode_id").isNotNull() &
-                                 col("datetime").isNotNull())
+                                 col("datetime").isNotNull() &
+                                 col("session_id").isNotNull())
     res = dedup_count - bronze_df.count()
     print(f"[Null drop] dropped rows : {res}")
 
@@ -142,11 +143,44 @@ if __name__ == "__main__":
     print("[Data] Silver table ex.")
     windowed_df.show(20, truncate=False)
 
-    if start_snapshot_id:
-        query = windowed_df \
-                    .writeTo("iceberg.silver.webtoon_user_session_events") \
-                    .append()
-    else:
-        query = windowed_df \
-            .writeTo("iceberg.silver.webtoon_user_session_events") \
-            .overwritePartitions()
+    # Merge upsert (idempotent)
+    windowed_df.createOrReplaceTempView("staging_sessions")
+
+    ss.sql("""
+        MERGE INTO iceberg.silver.webtoon_user_session_events t
+        USING staging_sessions s
+        ON t.session_id = s.session_id
+        AND t.user_id = s.user_id
+        AND t.webtoon_id = s.webtoon_id
+        AND t.episode_id = s.episode_id
+        AND t.platform = s.platform
+        AND t.country = s.country
+        AND t.device = s.device
+        AND t.browser = s.browser
+        AND t.datetime = s.datetime
+
+        WHEN MATCHED THEN UPDATE SET
+            t.start_time = s.start_time,
+            t.end_time = s.end_time,
+            t.duration_ms = s.duration_ms,
+            t.max_scroll_ratio = s.max_scroll_ratio,
+            t.seen_enter = s.seen_enter,
+            t.seen_scroll = s.seen_scroll,
+            t.seen_complete = s.seen_complete,
+            t.seen_exit = s.seen_exit,
+            t.session_state = s.session_state,
+            t.is_complete = s.is_complete,
+            t.is_exit = s.is_exit
+
+        WHEN NOT MATCHED THEN INSERT (
+            session_id, user_id, webtoon_id, episode_id, platform, country, device, browser, datetime,
+            start_time, end_time, duration_ms, max_scroll_ratio,
+            seen_enter, seen_scroll, seen_complete, seen_exit,
+            session_state, is_complete, is_exit
+        ) VALUES (
+            s.session_id, s.user_id, s.webtoon_id, s.episode_id, s.platform, s.country, s.device, s.browser, s.datetime,
+            s.start_time, s.end_time, s.duration_ms, s.max_scroll_ratio,
+            s.seen_enter, s.seen_scroll, s.seen_complete, s.seen_exit,
+            s.session_state, s.is_complete, s.is_exit
+        )
+    """)
