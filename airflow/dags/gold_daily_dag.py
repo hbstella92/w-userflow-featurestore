@@ -48,6 +48,7 @@ SPARK_APP_CONF = {
 
 def check_silver_file_count(**context):
     prev_date = macros.ds_add(context["ds"], -1)
+    # prev_date = context['ds']
     prefix = f"iceberg/silver/webtoon_user_session_events/data/datetime_day={prev_date}/"
 
     s3 = S3Hook(aws_conn_id="aws_default")
