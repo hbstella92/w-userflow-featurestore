@@ -160,4 +160,4 @@ if __name__ == "__main__":
     )
     country_daily_df.show(30, truncate=False)
 
-    country_daily_df.writeTo("iceberg.gold.country_daily_metrics").append()
+    country_daily_df.writeTo("iceberg.gold.country_daily_metrics").overwritePartitions()

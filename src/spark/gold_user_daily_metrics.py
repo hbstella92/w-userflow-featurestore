@@ -101,5 +101,5 @@ if __name__ == "__main__":
 
     user_daily_df.show(20, truncate=False)
 
-    user_daily_df.writeTo("iceberg.gold.user_daily_metrics").append()
+    user_daily_df.writeTo("iceberg.gold.user_daily_metrics").overwritePartitions()
     print("[INFO] Successfully write to gold.user_daily_metrics table!")

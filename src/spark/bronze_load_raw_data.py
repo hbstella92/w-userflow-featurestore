@@ -66,7 +66,7 @@ if __name__ == "__main__":
                 .format("kafka") \
                 .option("kafka.bootstrap.servers", KAFKA_BOOTSTRAP_SERVERS) \
                 .option("subscribe", KAFKA_TOPIC) \
-                .option("startingOffsets", "latest") \
+                .option("startingOffsets", "earliest") \
                 .option("maxOffsetsPerTrigger", "5000") \
                 .option("failOnDataLoss", "false") \
                 .load()

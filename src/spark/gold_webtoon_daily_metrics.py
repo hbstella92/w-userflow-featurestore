@@ -146,4 +146,4 @@ if __name__ == "__main__":
 
     webtoon_daily_df.show(30, truncate=False)
 
-    webtoon_daily_df.writeTo("iceberg.gold.webtoon_daily_metrics").append()
+    webtoon_daily_df.writeTo("iceberg.gold.webtoon_daily_metrics").overwritePartitions()

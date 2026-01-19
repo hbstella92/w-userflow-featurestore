@@ -113,5 +113,5 @@ if __name__ == "__main__":
 
     episode_daily_df.show(20, truncate=False)
 
-    episode_daily_df.writeTo("iceberg.gold.webtoon_episode_daily_metrics").append()
+    episode_daily_df.writeTo("iceberg.gold.webtoon_episode_daily_metrics").overwritePartitions()
     print("[INFO] Successfully write to gold.webtoon_episode_daily_metrics table!")
