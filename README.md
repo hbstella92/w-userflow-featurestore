@@ -1,6 +1,6 @@
 # **w-userflow-featurestore**
 
-실시간 형태의 유저 행동 이벤트를 시뮬레이션하여<br>
+실시간 이벤트 형태의 유저 행동 데이터를 시뮬레이션하여<br>
 스트리밍·배치 혼합 환경에서 데이터 정합성·재처리·운영 안정성을 고려한<br>
 Feature 생성 파이프라인의 설계 판단을 검증한 개인 프로젝트
 <br>
@@ -21,10 +21,9 @@ Feature 생성 파이프라인의 설계 판단을 검증한 개인 프로젝트
 - 증분 처리와 전체 재처리 간의 trade-off 인식
 - 장애 발생 시 복구 단위에 대한 운영 관점 고려
 
-이러한 관점을 바탕으로<br>
+이러한 관점을 구현하기 위해<br>
 Raw 데이터 보존, 레이어별 책임 분리(Bronze/Silver/Gold),<br>
-Iceberg snapshot 기반 처리 전략을 중심으로<br>
-파이프라인을 설계·구현했습니다.
+Iceberg snapshot 기반 처리 전략을 중심으로 파이프라인을 설계·구현했습니다.
 <br>
 <br>
 
@@ -44,7 +43,7 @@ Iceberg snapshot 기반 처리 전략을 중심으로<br>
 
 ## 3. 해결하고자 하는 문제 (Problem Statement)
 
-서비스형 유저 행동 데이터는<br>
+서비스 이벤트 형태의 유저 행동 데이터는<br>
 단순히 이벤트를 빠르게 적재하는 것만으로는<br>
 **분석과 Feature 생성에 바로 활용하기 어렵다**는 한계가 있습니다.
 
@@ -67,3 +66,87 @@ Iceberg snapshot 기반 처리 전략을 중심으로<br>
 Raw 데이터 보존을 전제로 한 레이어 분리,<br>
 증분 처리와 전체 재처리를 모두 고려한 저장 구조,<br>
 데이터 상태에 기반한 파이프라인 실행 제어가 필요하다고 판단했습니다.
+<br>
+<br>
+
+## 4. 아키텍처 (Architecture)
+
+본 프로젝트의 아키텍처는<br>
+앞서 정의한 문제들(정합성, 재처리 안정성, 복구 단위, 책임 분리)을<br>
+구조적으로 해결하는 것을 목표로 설계되었습니다.
+
+핵심 설계 방향은 다음과 같습니다.
+
+- Bronze/Silver/Gold 레이어로 책임을 분리해 **정합성 이슈의 범위를 제한**
+- 스트리밍은 Raw 적재, 배치는 정제·집계로 역할을 분리해 **운영 복잡도를 낮춤**
+- 증분 처리와 전체 재처리를 **모두 허용하는 테이블/레이어 구조**를 설계
+- 장애 발생 시 **레이어별 의미 단위(Streaming checkpoint / session / 집계 파티션)를 기준으로 복구 가능하도록 고려**
+
+이를 위해<br>
+`Kafka → Spark → Iceberg(Bronze/Silver/Gold) → Trino/Grafana` 구조를 채택했습니다.
+
+
+### 주요 구성 요소와 역할
+
+**Kafka**
+- 시뮬레이터(Producer)가 생성한 유저 행동 이벤트를 저장하는 중간 버퍼 역할
+- 소비자(Spark) 장애, 네트워크 지연 상황에서도 retention 기간 내 이벤트 재소비 가능
+
+**Spark Structured Streaming**
+- Kafka로부터 이벤트를 스트리밍 방식으로 처리
+- 최소한의 가공만 수행하여 **Bronze 레이어에 Raw 데이터 적재**
+- Checkpoint 기반으로 장애 시 재시작 가능하도록 구성
+
+**Apache Iceberg**
+- Bronze/Silver/Gold 레이어의 테이블 포맷
+- Snapshot 메타데이터를 기준으로 **증분 처리와 전체 재처리를 분기**할 수 있는 테이블 포맷
+
+**Apache Airflow**
+- Silver/Gold 배치 Spark Job 오케스트레이션
+- 데이터 상태(Silver 적재 완료 여부, snapshot 관계 등)에 기반한 **조건부 실행 제어**
+
+**Trino & Grafana**
+- Gold 레이어에 적재된 Feature 조회 및 시각화
+- 파이프라인 결과를 **검증 가능한 형태로 노출**
+<br>
+<br>
+
+## 5. Data Flow
+
+아래는 전체 데이터 흐름을 단순화한 구조입니다.
+
+```
+Simulated User Events
+        ↓
+      Kafka
+        ↓
+Spark Structured Streaming
+        ↓
+Iceberg (Bronze: Raw Events)
+        ↓
+Airflow-triggered Batch Jobs (Silver / Gold)
+        ↓
+Iceberg (Silver: Cleansed & Sessionized)
+        ↓
+Iceberg (Gold: Feature Tables)
+        ↓
+      Trino
+        ↓
+     Grafana
+```
+
+### Data Flow 설계 의도
+- Bronze
+  - Raw 이벤트를 가능한 한 그대로 보존
+  - 재처리 및 정합성 검증의 기준점 역할
+- Silver
+  - 중복 제거, null 처리, 타입 정제, session 단위 재구성
+  - 정합성 책임을 집중시키는 레이어
+- Gold
+  - 분석 및 시각화를 위한 Feature 및 집계 결과
+  - Silver 데이터가 정상적일 때만 생성되도록 제어
+
+이러한 흐름을 통해<br>
+문제 발생 시 **어느 레이어에서 문제가 발생했는지 명확히 추적**할 수 있도록 설계했습니다.
+<br>
+<br>
