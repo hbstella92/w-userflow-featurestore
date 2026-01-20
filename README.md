@@ -5,6 +5,7 @@
 Feature 생성 파이프라인의 설계 판단을 검증한 개인 프로젝트
 <br>
 <br>
+<br>
 
 ## 1. 프로젝트 목표 (Goals)
 
@@ -26,6 +27,7 @@ Raw 데이터 보존, 레이어별 책임 분리(Bronze/Silver/Gold),<br>
 Iceberg snapshot 기반 처리 전략을 중심으로 파이프라인을 설계·구현했습니다.
 <br>
 <br>
+<br>
 
 ## 2. 프로젝트 비목표 (Non-goals)
 
@@ -38,6 +40,7 @@ Iceberg snapshot 기반 처리 전략을 중심으로 파이프라인을 설계�
 소규모 환경을 전제로,<br>
 파이프라인 구조 설계, 운영 안정성, 재처리 전략의 타당성 검증에<br>
 집중했습니다.
+<br>
 <br>
 <br>
 
@@ -68,6 +71,7 @@ Raw 데이터 보존을 전제로 한 레이어 분리,<br>
 데이터 상태에 기반한 파이프라인 실행 제어가 필요하다고 판단했습니다.
 <br>
 <br>
+<br>
 
 ## 4. 아키텍처 (Architecture)
 
@@ -84,7 +88,8 @@ Raw 데이터 보존을 전제로 한 레이어 분리,<br>
 
 이를 위해<br>
 `Kafka → Spark → Iceberg(Bronze/Silver/Gold) → Trino/Grafana` 구조를 채택했습니다.
-
+<br>
+<br>
 
 ### 주요 구성 요소와 역할
 
@@ -134,6 +139,7 @@ Iceberg (Gold: Feature Tables)
         ↓
      Grafana
 ```
+<br>
 
 ### Data Flow 설계 의도
 - Bronze
