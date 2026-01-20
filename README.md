@@ -300,10 +300,11 @@ Iceberg (Gold: Feature Tables)
 <br>
 <br>
 <br>
+<br>
 
 ### 8.1. Kafka 이벤트 생성 (Simulator)
 
-유저 행동 이벤트는 Kafka Producer 기반의 시뮬레이터를 통해 생성됩니다.
+유저 행동 이벤트는 **Kafka Producer 기반의 시뮬레이터**를 통해 생성됩니다.
 
 ```
 # 프로젝트 최상단 디렉토리 진입
@@ -317,7 +318,57 @@ cd src/kafka
 python faker_producer.py --sessions {원하는 세션 수}
 ```
 
-- 지정한 session 수만큼 유저 행동 이벤트를 생성
+- **지정한 session 수만큼** 유저 행동 이벤트를 생성
 - 생성된 이벤트는 Kafka topic으로 프로듀싱 됨
+<br>
+<br>
+
+### 8.2. Airflow 설정 및 파이프라인 실행
+
+Batch 파이프라인(Silver / Gold)은 Airflow DAG을 통해 오케스트레이션됩니다.
+<br>
+
+#### Airflow Connection 설정
+Airflow UI에서 아래 Connection들을 사전에 등록합니다.
+
+- **spark_default**
+  - Spark Submit을 통한 Batch Job 실행용
+- **aws_default**
+  - Iceberg 테이블이 저장된 S3 Object Storage 접근용
+- **slack_webhook**
+  - DAG 실패 알림용 (선택)
+
+> Connection 상세 값은 환경(Spark 실행 모드, AWS 계정 credential, Slack webhook 설정)에 따라 달라질 수 있습니다.
+<br>
+
+#### DAG 실행 순서
+
+1. **Bronze DAG 실행**
+- Kafka 메세지를 소비하여 Bronze 레이어에 Raw 이벤트 적재
+- 필요 시 수동 trigger
+
+2. **Silver DAG 활성화**
+- Bronze 데이터를 입력으로 정제 및 session 단위 재구성
+- 10분 단위 스케줄 실행
+
+3. **Gold DAG 활성화**
+- Silver 데이터를 기반으로 Feature 및 집계 생성
+- 하루 1회 스케줄 실행
+<br>
+
+#### 실행 흐름 요약
+
+```
+Kafka Simulator 실행
+        ↓
+Bronze DAG (Streaming 적재)
+        ↓
+Silver DAG (정제 / Sessionization)
+        ↓
+Gold DAG (Feature 생성)
+```
+
+이 실행 흐름을 통해 `Kafka → Spark → Iceberg` 기반의 스트리밍·배치 혼합 파이프라인을 단계적으로 확인할 수 있습니다.
+<br>
 <br>
 <br>
