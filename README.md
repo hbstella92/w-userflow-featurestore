@@ -347,16 +347,16 @@ Airflow UI에서 아래 Connection들을 사전에 등록합니다.
 #### DAG 실행 순서
 
 1. **Bronze DAG 실행**
-  - Kafka 메세지를 소비하여 Bronze 레이어에 Raw 이벤트 적재
-  - 필요 시 수동 trigger
+    - Kafka 메세지를 소비하여 Bronze 레이어에 Raw 이벤트 적재
+    - 필요 시 수동 trigger
 
 2. **Silver DAG 활성화**
-  - Bronze 데이터를 입력으로 정제 및 session 단위 재구성
-  - 10분 단위 스케줄 실행
+    - Bronze 데이터를 입력으로 정제 및 session 단위 재구성
+    - 10분 단위 스케줄 실행
 
 3. **Gold DAG 활성화**
-  - Silver 데이터를 기반으로 Feature 및 집계 생성
-  - 하루 1회 스케줄 실행
+    - Silver 데이터를 기반으로 Feature 및 집계 생성
+    - 하루 1회 스케줄 실행
 <br>
 
 #### 실행 흐름 요약
