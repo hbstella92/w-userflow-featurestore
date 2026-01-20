@@ -291,13 +291,13 @@ Iceberg (Gold: Feature Tables)
 <br>
 <br>
 <br>
+<br>
 
 ## 8. 실행 방법 (How to Run)
 
 본 프로젝트는 `Kafka 기반 이벤트 생성 → Streaming 적재 → Batch 처리` 흐름을 단계적으로 실행할 수 있도록 구성되어 있습니다.
 
 아래는 **테스트 환경 기준의 실행 흐름**입니다.
-<br>
 <br>
 <br>
 <br>
@@ -310,8 +310,10 @@ Iceberg (Gold: Feature Tables)
 # 프로젝트 최상단 디렉토리 진입
 cd w-userflow-featurestore
 
+
 # 가상환경 활성화
 source .venv/bin/activate
+
 
 # Kafka Producer 실행
 cd src/kafka
@@ -326,6 +328,7 @@ python faker_producer.py --sessions {원하는 세션 수}
 ### 8.2. Airflow 설정 및 파이프라인 실행
 
 Batch 파이프라인(Silver / Gold)은 Airflow DAG을 통해 오케스트레이션됩니다.
+<br>
 <br>
 
 #### Airflow Connection 설정
@@ -344,16 +347,16 @@ Airflow UI에서 아래 Connection들을 사전에 등록합니다.
 #### DAG 실행 순서
 
 1. **Bronze DAG 실행**
-- Kafka 메세지를 소비하여 Bronze 레이어에 Raw 이벤트 적재
-- 필요 시 수동 trigger
+  - Kafka 메세지를 소비하여 Bronze 레이어에 Raw 이벤트 적재
+  - 필요 시 수동 trigger
 
 2. **Silver DAG 활성화**
-- Bronze 데이터를 입력으로 정제 및 session 단위 재구성
-- 10분 단위 스케줄 실행
+  - Bronze 데이터를 입력으로 정제 및 session 단위 재구성
+  - 10분 단위 스케줄 실행
 
 3. **Gold DAG 활성화**
-- Silver 데이터를 기반으로 Feature 및 집계 생성
-- 하루 1회 스케줄 실행
+  - Silver 데이터를 기반으로 Feature 및 집계 생성
+  - 하루 1회 스케줄 실행
 <br>
 
 #### 실행 흐름 요약
