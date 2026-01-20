@@ -249,11 +249,10 @@ Iceberg (Gold: Feature Tables)
 <br>
 <br>
 <br>
-<br>
 
 ## 7. 데이터 모델 (Data Model)
 
-본 프로젝트의 데이터 모델은 각 레이어(Bronze / Silver / Gold)가 **서로 다른 책임과 의미 단위**를 갖도록 설계되었습니다.
+본 프로젝트의 데이터 모델은 **각 레이어(Bronze / Silver / Gold)가 서로 다른 책임과 의미 단위를 갖도록 설계**되었습니다.
 <br>
 <br>
 <br>
@@ -277,9 +276,8 @@ Iceberg (Gold: Feature Tables)
 - Feature 목적에 맞는 집계 단위로 구성 (예: 국가, 사용자, 콘텐츠, 플랫폼 등)
 - 입력 데이터(Silver)의 상태가 보장된 경우에만 **Feature 생성**
 <br>
-<br>
 
-#### 이 데이터 모델이 가지는 의미
+### 이 데이터 모델이 가지는 의미
 
 이 데이터 모델을 통해:
 - 정합성 관련 주요 정제 로직을 Silver 레이어에 집중
@@ -292,5 +290,34 @@ Iceberg (Gold: Feature Tables)
 이는 파이프라인 장애나 데이터 오류 발생 시, 문제 원인과 복구 범위를 빠르게 판단할 수 있도록 합니다.
 <br>
 <br>
+<br>
+
+## 8. 실행 방법 (How to Run)
+
+본 프로젝트는 `Kafka 기반 이벤트 생성 → Streaming 적재 → Batch 처리` 흐름을 단계적으로 실행할 수 있도록 구성되어 있습니다.
+
+아래는 **테스트 환경 기준의 실행 흐름**입니다.
+<br>
+<br>
+<br>
+
+### 8.1. Kafka 이벤트 생성 (Simulator)
+
+유저 행동 이벤트는 Kafka Producer 기반의 시뮬레이터를 통해 생성됩니다.
+
+```
+# 프로젝트 최상단 디렉토리 진입
+cd w-userflow-featurestore
+
+# 가상환경 활성화
+source .venv/bin/activate
+
+# Kafka Producer 실행
+cd src/kafka
+python faker_producer.py --sessions {원하는 세션 수}
+```
+
+- 지정한 session 수만큼 유저 행동 이벤트를 생성
+- 생성된 이벤트는 Kafka topic으로 프로듀싱 됨
 <br>
 <br>
