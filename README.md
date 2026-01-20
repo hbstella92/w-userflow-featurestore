@@ -248,3 +248,49 @@ Iceberg (Gold: Feature Tables)
 - 장애 대응 시 운영자 판단 부담 감소
 <br>
 <br>
+<br>
+<br>
+
+## 7. 데이터 모델 (Data Model)
+
+본 프로젝트의 데이터 모델은 각 레이어(Bronze / Silver / Gold)가 **서로 다른 책임과 의미 단위**를 갖도록 설계되었습니다.
+<br>
+<br>
+<br>
+
+### 7.1. Bronze (Raw Events)
+- Kafka로부터 수집한 유저 행동 이벤트 원본
+- 이벤트 timestamp를 기준으로 date 컬럼만 추가된 **append-only 데이터**
+- 필요 시 **상위 레이어를 재처리할 수 있는 기준점** 역할
+<br>
+<br>
+
+### 7.2. Silver (Cleansed & Sessionized Events)
+- 이벤트를 session 단위로 재구성하여 **의미 단위를 명확히 정의**
+- 중복 제거, null 처리, 타입 캐스팅 등 **정합성 관련 주요 정제 로직**을 수행
+- 정합성 이슈 발생 시 **session 단위로 재계산이 가능하도록** 설계
+<br>
+<br>
+
+### 7.3. Gold (Feature Tables)
+- Silver 데이터를 기반으로 생성된 Feature 및 집계 결과
+- Feature 목적에 맞는 집계 단위로 구성 (예: 국가, 사용자, 콘텐츠, 플랫폼 등)
+- 입력 데이터(Silver)의 상태가 보장된 경우에만 **Feature 생성**
+<br>
+<br>
+
+#### 이 데이터 모델이 가지는 의미
+
+이 데이터 모델을 통해:
+- 정합성 관련 주요 정제 로직을 Silver 레이어에 집중
+- 재처리는 Bronze 또는 Silver 기준으로 수행
+- Gold는 검증된 결과만을 담는 레이어
+
+로 역할이 명확히 분리됩니다.
+
+
+이는 파이프라인 장애나 데이터 오류 발생 시, 문제 원인과 복구 범위를 빠르게 판단할 수 있도록 합니다.
+<br>
+<br>
+<br>
+<br>
