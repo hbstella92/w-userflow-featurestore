@@ -160,6 +160,36 @@ Iceberg (Gold: Feature Tables)
 <br>
 <br>
 
+### 6.0. 기술 선택 기준 및 이유
+
+본 프로젝트에서의 기술 선택은 **최신성이나 성능 지표보다는**  
+스트리밍·배치 혼합 환경에서 **정합성, 재처리, 장애 복구 시나리오를 구조적으로 검증할 수 있는지**를 기준으로 이루어졌습니다.
+
+- **Kafka**
+  - Producer/Consumer 분리를 통해 이벤트 스트림을 안정적으로 버퍼링할 수 있음
+  - 소비자(Spark) 장애 발생 시에도 retention 기간 내 재소비가 가능해 **스트리밍 복구 시나리오 검증에 적합**하다고 판단
+
+- **Spark Structured Streaming**
+  - Kafka 소스와의 통합이 안정적
+  - Checkpoint 기반 재시작을 통해 **어디까지 처리되었는지 상태를 명확히 관리**할 수 있어 Bronze 레이어의 Raw 적재에 적합하다고 판단
+
+- **Apache Iceberg**
+  - Snapshot 메타데이터를 통해 증분 처리와 전체 재처리를 **구조적 기준으로 분기**할 수 있어서 재처리 안정성 검증에 적합하다고 판단
+  - 메타데이터 기반 원자적 커밋으로 배치 실패 시 **부분 반영 위험을 줄이고**, 일관된 snapshot을 유지 가능
+  - Spark/Trino 등 여러 엔진에서 동일 테이블을 일관된 snapshot 기준으로 사용할 수 있는 오픈 테이블 포맷
+
+- **Apache Airflow**
+  - Silver/Gold 배치 작업을 DAG 단위로 분리하여 운영 흐름을 명확히 하고
+  - 데이터 상태(Silver 적재 완료 여부 등)에 기반한 **조건부 실행 제어**를 구현하기에 적합하다고 판단
+
+- **Trino**
+  - Iceberg 테이블을 SQL로 직접 조회하여 결과를 **빠르게 검증/조회**하는 쿼리 엔진으로 활용
+
+- **Grafana**
+  - 파이프라인이 생성한 Feature를 **대시보드로 시각화하여 결과를 지속적으로 확인할 수 있는 인터페이스**로 활용
+<br>
+<br>
+
 ### 6.1. Raw 데이터 보존을 전제로 한 Bronze 레이어 설계
 
 **결정**
@@ -299,9 +329,9 @@ Iceberg (Gold: Feature Tables)
 본 프로젝트는 `Kafka, Airflow, Spark, Iceberg, Trino, Grafana` 등 여러 컴포넌트로 구성되어 있으며, **Docker Compose 기반으로 실행 환경을 먼저 구성한 후** Kafka 이벤트 생성 및 파이프라인을 실행합니다.
 <br>
 <br>
+<br>
 
 아래는 **테스트 환경 기준의 전체 실행 흐름**입니다.
-<br>
 <br>
 <br>
 
@@ -347,7 +377,6 @@ docker compose up -d airflow-init
 # 전체 컨테이너 실행
 docker compose up -d
 ```
-
 <br>
 
 #### 8.0.4. 컨테이너 상태 확인 (선택)
@@ -357,6 +386,7 @@ docker compose ps
 ```
 
 컨테이너가 정상적으로 기동되면 다음 단계로 **Kafka 이벤트 생성 및 DAG 실행**을 진행합니다.
+<br>
 <br>
 <br>
 <br>
