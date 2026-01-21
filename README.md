@@ -326,9 +326,8 @@ docker compose down -v
 docker compose build --no-cache
 ```
 
-> 이전 실행 환경이나 볼륨 상태로 인한 오류를 방지하기 위해
+> 이전 실행 환경이나 볼륨 상태로 인한 오류를 방지하기 위해  
 > 초기 실행 시 `down -v` 및 `--no-cache` 빌드를 권장합니다.
-<br>
 <br>
 
 #### 8.0.2. Airflow 초기화 컨테이너 실행
@@ -338,9 +337,8 @@ docker compose build --no-cache
 docker compose up -d airflow-init
 ```
 
-> Airflow는 최초 실행 시 metadata DB 초기화가 필요하며,
+> Airflow는 최초 실행 시 metadata DB 초기화가 필요하며,  
 > 해당 작업은 `airflow-init` 컨테이너에서 수행됩니다.
-<br>
 <br>
 
 #### 8.0.3. 전체 서비스 기동
@@ -350,7 +348,6 @@ docker compose up -d airflow-init
 docker compose up -d
 ```
 
-<br>
 <br>
 
 #### 8.0.4. 컨테이너 상태 확인 (선택)
