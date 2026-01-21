@@ -298,6 +298,7 @@ Iceberg (Gold: Feature Tables)
 
 본 프로젝트는 `Kafka, Airflow, Spark, Iceberg, Trino, Grafana` 등 여러 컴포넌트로 구성되어 있으며, **Docker Compose 기반으로 실행 환경을 먼저 구성한 후** Kafka 이벤트 생성 및 파이프라인을 실행합니다.
 <br>
+<br>
 
 아래는 **테스트 환경 기준의 전체 실행 흐름**입니다.
 <br>
@@ -307,6 +308,7 @@ Iceberg (Gold: Feature Tables)
 ### 8.0. Docker Compose 기반 실행 환경 구성
 
 Kafka, Airflow, Iceberg Catalog, Trino, Grafana 등 파이프라인 구성 요소를 **Docker Compose로 한 번에 기동**합니다.
+<br>
 <br>
 
 #### 8.0.1. 컨테이너 초기화 및 빌드
@@ -391,7 +393,7 @@ Batch 파이프라인(Silver / Gold)은 Airflow DAG을 통해 오케스트레이
 <br>
 <br>
 
-#### Airflow Connection 설정
+#### 8.2.1. Airflow Connection 설정
 Airflow UI에서 아래 Connection들을 사전에 등록합니다.
 
 - **spark_default**
@@ -404,7 +406,7 @@ Airflow UI에서 아래 Connection들을 사전에 등록합니다.
 > Connection 상세 값은 환경(Spark 실행 모드, AWS 계정 credential, Slack webhook 설정)에 따라 달라질 수 있습니다.
 <br>
 
-#### DAG 실행 순서
+#### 8.2.2. DAG 실행 순서
 
 1. **Bronze DAG 실행**
     - Kafka 메세지를 소비하여 Bronze 레이어에 Raw 이벤트 적재
