@@ -296,10 +296,34 @@ Iceberg (Gold: Feature Tables)
 
 ## 8. 실행 방법 (How to Run)
 
-본 프로젝트는 `Kafka 기반 이벤트 생성 → Streaming 적재 → Batch 처리` 흐름을 단계적으로 실행할 수 있도록 구성되어 있습니다.
+본 프로젝트는 `Kafka, Airflow, Spark, Iceberg, Trino, Grafana` 등 여러 컴포넌트로 구성되어 있으며, **Docker Compose 기반으로 실행 환경을 먼저 구성한 후** Kafka 이벤트 생성 및 파이프라인을 실행합니다.
 
-아래는 **테스트 환경 기준의 실행 흐름**입니다.
+아래는 **테스트 환경 기준의 전체 실행 흐름**입니다.
 <br>
+<br>
+<br>
+
+### 8.0. Docker Compose 기반 실행 환경 구성
+
+Kafka, Airflow, Iceberg Catalog, Trino, Grafana 등 파이프라인 구성 요소를 **Docker Compose로 한 번에 기동**합니다.
+
+#### 8.0.1. 컨테이너 초기화 및 빌드
+
+```
+# 프로젝트 최상단 디렉토리 진입
+cd w-userflow-featurestore
+
+
+# 기존 컨테이너 및 볼륨 정리
+docker compose down -v
+
+
+# 이미지 캐시 없이 재빌드
+docker compose build --no-cache
+```
+
+> 이전 실행 환경이나 볼륨 상태로 인한 오류를 방지하기 위해
+> 초기 실행 시 `down -v` 및 `--no-cache` 빌드를 권장합니다.
 <br>
 <br>
 
