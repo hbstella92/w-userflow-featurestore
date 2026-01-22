@@ -241,28 +241,25 @@ Gold 레이어는 최종 Feature / 집계 결과를 생성하는 단계로, 입�
 
 
 - **Silver 레이어 session 정합성 훼손 이슈**
-  - session 식별 충돌과 고정 window 기반 집계 한계로 인한 상태 왜곡
   - 👉 [Issue #1] https://github.com/hbstella92/w-userflow-featurestore/issues/37
 
 - **Spark Structured Streaming에서의 중첩 stateful 연산 제한으로 인한 집계 구조 재설계**
-  - Spark Structured Streaming의 안정성 제약 대응
-  - 👉 [Issue #2]
+  - 👉 [Issue #2] https://github.com/hbstella92/w-userflow-featurestore/issues/38
 
 - **Iceberg Catalog 고아 엔트리로 인한 테이블 삭제 / 재적재 실패**
-  - Catalog, Object storage 이중 상태 관리 이슈
-  - 👉 [Issue #3]
+  - 👉 [Issue #3] https://github.com/hbstella92/w-userflow-featurestore/issues/39
 
 - **Kafka Broker 디스크 포화로 인한 Producer 메세지 전송 실패**
-  - 👉 [Issue #4]
+  - 👉 [Issue #4] https://github.com/hbstella92/w-userflow-featurestore/issues/40
 
 - **Airflow callback에서 Variable 조회 불안정으로 인한 Slack 알림 실패**
-  - 👉 [Issue #5]
+  - 👉 [Issue #5] https://github.com/hbstella92/w-userflow-featurestore/issues/41
 
 - **Airflow에서 spark-submit 실패 - PySpark 패키지와 Spark 배포판 혼동**
-  - 👉 [Issue #6]
+  - 👉 [Issue #6] https://github.com/hbstella92/w-userflow-featurestore/issues/42
 
 - **Airflow metadata DB init 누락으로 인한 webserver 기동 실패**
-  - 👉 [Issue #7]
+  - 👉 [Issue #7] https://github.com/hbstella92/w-userflow-featurestore/issues/43
 <br>
 <br>
 <br>
