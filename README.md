@@ -6,13 +6,13 @@
 <br>
 <br>
 
-## 1. What problem this project solves
+## 1. What problem this project solves (이 프로젝트가 해결하려는 문제)
 
 유저 행동 이벤트 데이터는 분석 목적과 Feature 요구사항에 따라 **event, session, aggregate 등 서로 다른 의미 단위로 해석될 필요가 있습니다.**
 
 
 하지만 하나의 파이프라인에서 이처럼 서로 다른 의미 단위를 함께 다루기 시작하면, 정합성과 재처리 기준을 일관되게 유지하기 어려워집니다.
-
+<br>
 
 예를 들어,
 - Raw 데이터는 event 단위인데
