@@ -235,7 +235,7 @@ Gold 레이어는 최종 Feature / 집계 결과를 생성하는 단계로, 입�
 <br>
 <br>
 
-## 5. Troubleshooting (주요 트러블슈팅)
+## 5. Trouble Shooting (주요 트러블슈팅)
 
 본 프로젝트를 구현 및 운영하면서 발생했던 주요 이슈들을 GitHub Issue 단위로 정리했습니다.
 
