@@ -235,7 +235,40 @@ Gold 레이어는 최종 Feature / 집계 결과를 생성하는 단계로, 입�
 <br>
 <br>
 
-## 5. How to Run (프로젝트 실행 방법)
+## 5. Troubleshooting (주요 트러블슈팅)
+
+본 프로젝트를 구현 및 운영하면서 발생했던 주요 이슈들을 GitHub Issue 단위로 정리했습니다.
+
+
+- **Silver 레이어 session 정합성 훼손 이슈**
+  - session 식별 충돌과 고정 window 기반 집계 한계로 인한 상태 왜곡
+  - 👉 [Issue #1] https://github.com/hbstella92/w-userflow-featurestore/issues/37
+
+- **Spark Structured Streaming에서의 중첩 stateful 연산 제한으로 인한 집계 구조 재설계**
+  - Spark Structured Streaming의 안정성 제약 대응
+  - 👉 [Issue #2]
+
+- **Iceberg Catalog 고아 엔트리로 인한 테이블 삭제 / 재적재 실패**
+  - Catalog, Object storage 이중 상태 관리 이슈
+  - 👉 [Issue #3]
+
+- **Kafka Broker 디스크 포화로 인한 Producer 메세지 전송 실패**
+  - 👉 [Issue #4]
+
+- **Airflow callback에서 Variable 조회 불안정으로 인한 Slack 알림 실패**
+  - 👉 [Issue #5]
+
+- **Airflow에서 spark-submit 실패 - PySpark 패키지와 Spark 배포판 혼동**
+  - 👉 [Issue #6]
+
+- **Airflow metadata DB init 누락으로 인한 webserver 기동 실패**
+  - 👉 [Issue #7]
+<br>
+<br>
+<br>
+<br>
+
+## 6. How to Run (프로젝트 실행 방법)
 
 본 프로젝트는 `Kafka, Airflow, Spark, Iceberg, Trino, Grafana` 등 여러 컴포넌트로 구성되어 있으며, **Docker Compose 기반으로 실행 환경을 먼저 구성한 후** Kafka 이벤트 생성 및 파이프라인을 실행합니다.
 <br>
@@ -246,14 +279,14 @@ Gold 레이어는 최종 Feature / 집계 결과를 생성하는 단계로, 입�
 <br>
 <br>
 
-### 5.0. Docker Compose 기반 실행 환경 구성
+### 6.0. Docker Compose 기반 실행 환경 구성
 
 
 Kafka, Airflow, Iceberg Catalog, Trino, Grafana 등 파이프라인 구성 요소를 **Docker Compose로 한 번에 기동**합니다.
 <br>
 <br>
 
-#### 5.0.1. 컨테이너 초기화 및 빌드
+#### 6.0.1. 컨테이너 초기화 및 빌드
 
 ```
 # 프로젝트 최상단 디렉토리 진입
@@ -272,7 +305,7 @@ docker compose build --no-cache
 > 초기 실행 시 `down -v` 및 `--no-cache` 빌드를 권장합니다.
 <br>
 
-#### 5.0.2. Airflow 초기화 컨테이너 실행
+#### 6.0.2. Airflow 초기화 컨테이너 실행
 
 ```
 # Airflow metadata DB 초기화 및 기본 설정
@@ -283,7 +316,7 @@ docker compose up -d airflow-init
 > 해당 작업은 `airflow-init` 컨테이너에서 수행됩니다.
 <br>
 
-#### 5.0.3. 전체 서비스 기동
+#### 6.0.3. 전체 서비스 기동
 
 ```
 # 전체 컨테이너 실행
@@ -291,7 +324,7 @@ docker compose up -d
 ```
 <br>
 
-#### 5.0.4. 컨테이너 상태 확인 (선택)
+#### 6.0.4. 컨테이너 상태 확인 (선택)
 
 ```
 docker compose ps
@@ -304,7 +337,7 @@ docker compose ps
 <br>
 <br>
 
-### 5.1. Kafka 이벤트 생성 (Simulator)
+### 6.1. Kafka 이벤트 생성 (Simulator)
 
 유저 행동 이벤트는 **Kafka Producer 기반의 시뮬레이터**를 통해 생성됩니다.
 
@@ -328,13 +361,13 @@ python faker_producer.py --sessions {원하는 세션 수}
 <br>
 <br>
 
-### 5.2. Airflow 설정 및 파이프라인 실행
+### 6.2. Airflow 설정 및 파이프라인 실행
 
 Batch 파이프라인(Silver / Gold)은 Airflow DAG을 통해 오케스트레이션됩니다.
 <br>
 <br>
 
-#### 5.2.1. Airflow Connection 설정
+#### 6.2.1. Airflow Connection 설정
 Airflow UI에서 아래 Connection들을 사전에 등록합니다.
 
 - **spark_default**
@@ -347,7 +380,7 @@ Airflow UI에서 아래 Connection들을 사전에 등록합니다.
 > Connection 상세 값은 환경(Spark 실행 모드, AWS 계정 credential, Slack webhook 설정)에 따라 달라질 수 있습니다.
 <br>
 
-#### 5.2.2. DAG 실행 순서
+#### 6.2.2. DAG 실행 순서
 
 1. **Bronze DAG 실행**
     - Kafka 메세지를 소비하여 Bronze 레이어에 Raw 이벤트 적재
