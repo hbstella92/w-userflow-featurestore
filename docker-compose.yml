@@ -107,8 +107,8 @@ services:
     volumes:
       - ./src/spark:/opt/workspace/src/spark
       - .env:/opt/workspace/.env
-      - ./spark/checkpoints:/opt/workspace/checkpoints
-      - ./spark/data:/opt/workspace/data
+      - spark_checkpoints:/opt/workspace/checkpoints
+      - spark_data:/opt/workspace/data
     command: >
       bash -c "/opt/spark/bin/spark-class org.apache.spark.deploy.master.Master --host spark-master --port 7077 --webui-port 8080"
     deploy:
@@ -146,8 +146,8 @@ services:
     volumes:
       - ./src/spark:/opt/workspace/src/spark
       - .env:/opt/workspace/.env
-      - ./spark/checkpoints:/opt/workspace/checkpoints
-      - ./spark/data:/opt/workspace/data
+      - spark_checkpoints:/opt/workspace/checkpoints
+      - spark_data:/opt/workspace/data
     command: >
       bash -c "/opt/spark/bin/spark-class org.apache.spark.deploy.worker.Worker --host spark-worker --webui-port 8081 --cores 2 --memory 16G spark://spark-master:7077"
     deploy:
@@ -185,8 +185,8 @@ services:
     volumes:
       - ./src/spark:/opt/workspace/src/spark
       - .env:/opt/workspace/.env
-      - ./spark/checkpoints:/opt/workspace/checkpoints
-      - ./spark/data:/opt/workspace/data
+      - spark_checkpoints:/opt/workspace/checkpoints
+      - spark_data:/opt/workspace/data
     command: >
       bash -c "/opt/spark/bin/spark-class org.apache.spark.deploy.worker.Worker --host spark-worker-2 --webui-port 8081 --cores 2 --memory 8G spark://spark-master:7077"
     deploy:
@@ -224,8 +224,8 @@ services:
     volumes:
       - ./src/spark:/opt/workspace/src/spark
       - .env:/opt/workspace/.env
-      - ./spark/checkpoints:/opt/workspace/checkpoints
-      - ./spark/data:/opt/workspace/data
+      - spark_checkpoints:/opt/workspace/checkpoints
+      - spark_data:/opt/workspace/data
     command: >
         bash -c "/opt/spark/bin/spark-class org.apache.spark.deploy.worker.Worker --host spark-worker-3 --webui-port 8081 --cores 2 --memory 16G spark://spark-master:7077"
     deploy:
@@ -384,6 +384,8 @@ services:
     restart: always
 
 volumes:
+  spark_checkpoints:
+  spark_data:
   pg_data:
   airflow_logs:
   airflow_plugins:

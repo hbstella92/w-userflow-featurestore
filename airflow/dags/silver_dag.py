@@ -155,7 +155,7 @@ with DAG(
 
     silver_cleansing_task = SparkSubmitOperator(
         task_id="silver_user_session_events",
-        application="/opt/workspace/src/spark/silver_user_session_events.py",
+        application="/opt/workspace/src/spark/silver/silver_user_session_events.py",
         conn_id="spark_default",
         application_args=[
             "--date", "{{ ds }}",
