@@ -4,6 +4,8 @@
 # 가상환경
 .venv
 
+.devcontainer
+
 # 로그
 airflow/logs/
 airflow/plugins/
