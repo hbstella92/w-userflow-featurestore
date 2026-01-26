@@ -25,7 +25,7 @@ with DAG(
 ) as dag:
     bronze_ingest_task = SparkSubmitOperator(
         task_id="bronze_load_raw_data",
-        application="/opt/workspace/src/spark/bronze_load_raw_data.py",
+        application="/opt/workspace/src/spark/bronze/bronze_load_raw_data.py",
         conn_id="spark_default",
         conf={
             "spark.executor.instances": "1",

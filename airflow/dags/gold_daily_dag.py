@@ -85,7 +85,7 @@ with DAG (
 
     gold_user_daily_metrics = SparkSubmitOperator(
         task_id="gold_user_daily_metrics",
-        application="/opt/workspace/src/spark/gold_user_daily_metrics.py",
+        application="/opt/workspace/src/spark/gold/gold_user_daily_metrics.py",
         conn_id="spark_default",
         application_args=[
             "--snapshot_date", "{{ macros.ds_add(ds, -1) }}"
@@ -97,7 +97,7 @@ with DAG (
 
     gold_webtoon_episode_daily_metrics = SparkSubmitOperator(
         task_id="gold_webtoon_episode_daily_metrics",
-        application="/opt/workspace/src/spark/gold_webtoon_episode_daily_metrics.py",
+        application="/opt/workspace/src/spark/gold/gold_webtoon_episode_daily_metrics.py",
         conn_id="spark_default",
         application_args=[
             "--snapshot_date", "{{ macros.ds_add(ds, -1) }}"
@@ -109,7 +109,7 @@ with DAG (
 
     gold_webtoon_daily_metrics = SparkSubmitOperator(
         task_id="gold_webtoon_daily_metrics",
-        application="/opt/workspace/src/spark/gold_webtoon_daily_metrics.py",
+        application="/opt/workspace/src/spark/gold/gold_webtoon_daily_metrics.py",
         conn_id="spark_default",
         application_args=[
             "--snapshot_date", "{{ macros.ds_add(ds, -1) }}"
@@ -133,7 +133,7 @@ with DAG (
 
     gold_country_daily_metrics = SparkSubmitOperator(
         task_id="gold_country_daily_metrics",
-        application="/opt/workspace/src/spark/gold_country_daily_metrics.py",
+        application="/opt/workspace/src/spark/gold/gold_country_daily_metrics.py",
         conn_id="spark_default",
         application_args=[
             "--snapshot_date", "{{ macros.ds_add(ds, -1) }}"

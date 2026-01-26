@@ -8,10 +8,6 @@
 airflow/logs/
 airflow/plugins/
 
-# spark
-spark/data/
-spark/checkpoints/
-
 *.pyc
 *.tar
 *.tgz
