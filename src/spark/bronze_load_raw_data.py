@@ -85,7 +85,7 @@ if __name__ == "__main__":
                     .format("iceberg") \
                     .outputMode("append") \
                     .option("checkpointLocation", f"{SPARK_CHECKPOINT_DIR}/bronze/1") \
-                    .option("maxOffsetsPerTrigger", "5000") \
+                    .option("maxOffsetsPerTrigger", "1000") \
                     .trigger(processingTime="30 seconds") \
                     .toTable("iceberg.bronze.webtoon_user_events_raw")
     

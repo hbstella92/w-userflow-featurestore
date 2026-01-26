@@ -61,7 +61,7 @@ services:
         sleep 10
         kafka-topics --bootstrap-server localhost:29092 \
           --create --if-not-exists --topic webtoon_user_events_v2 \
-          --partitions 1 --replication-factor 1
+          --partitions 12 --replication-factor 1
         wait
     healthcheck:
       test: ["CMD-SHELL", "kafka-topics --bootstrap-server localhost:29092 --list || exit 1"]
