@@ -62,33 +62,10 @@ def slack_failure_alert(context):
         print(f"[Slack Alert] Failed to send : {e}")
 
 
-def is_ancestor_snapshot(ss, table_name, start_id, end_id):
-    current_id = end_id
-
-    while True:
-        df = ss.sql(f"""
-            SELECT parent_id
-            FROM {table_name}.snapshots
-            WHERE snapshot_id = {current_id}
-        """)
-        rows = df.collect()
-
-        if not rows or rows[0]["parent_id"] is None:
-            break
-
-        parent_id = rows[0]["parent_id"]
-        if parent_id is None:
-            return False
-
-        if parent_id == start_id:
-            return True
-
-        current_id = parent_id
-
-    return False
-
-
 def get_snapshot_id(**context):
+    import sys
+    sys.path.insert(0, "/opt/workspace")
+    from src.diagnosis.snapshot_extractor import is_ancestor_snapshot
     from pyspark.sql import SparkSession
 
     ss = SparkSession.builder \
