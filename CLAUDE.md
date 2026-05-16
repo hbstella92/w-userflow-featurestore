@@ -141,3 +141,11 @@ Slack으로 전송하는 자동화 파이프라인 추가.
 1. `iceberg.silver.webtoon_user_session_events` (핵심 테이블)
 2. `iceberg.bronze.webtoon_user_events_raw`
 3. Gold 5개 테이블
+
+## 구현 진행 상황
+- [x] src/diagnosis/ 디렉토리 생성
+- [x] snapshot_extractor.py 생성
+- [x] anomaly_detector.py
+- [ ] llm_diagnostics.py
+- [ ] slack_notifier.py
+- [ ] diagnosis_dag.py
