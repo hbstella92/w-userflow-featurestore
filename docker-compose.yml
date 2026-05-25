@@ -267,6 +267,7 @@ services:
       - ./airflow/dags:/opt/airflow/dags
       - airflow_logs:/opt/airflow/logs
       - ./src/spark:/opt/workspace/src/spark
+      - ./src/diagnosis:/opt/workspace/src/diagnosis
       - airflow_plugins:/opt/airflow/plugins
 
   airflow-init:
