@@ -108,7 +108,10 @@ class AnomalyDetector:
     def _check_data_spike(self, diff: SnapshotDiff) -> List[AnomalyResult]:
         if diff.total_records == 0 or diff.added_records == 0:
             return []
-        ratio = diff.added_records / diff.total_records
+        previous_total = diff.total_records + diff.deleted_records - diff.added_records
+        if previous_total <= 0:
+            return []
+        ratio = diff.added_records / previous_total
         if ratio > self.SPIKE_RATIO_THRESHOLD:
             return [AnomalyResult(
                 table_name=diff.table_name,

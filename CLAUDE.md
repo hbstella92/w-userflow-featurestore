@@ -112,7 +112,7 @@ Key vars passed to all containers: `KAFKA_BOOTSTRAP_SERVERS`, `SPARK_MASTER`, `S
 - **Gold fails on file count check**: Silver partition is incomplete; wait for the Silver DAG to finish, then re-run Gold.
 - **Spark OOM**: Increase executor memory in the `conf` dict of the relevant DAG's `SparkSubmitOperator`.
 
-## New Feature: LLM-based Snapshot Diagnosis (구현 중)
+## New Feature: LLM-based Snapshot Diagnosis (구현 완료)
 
 ### 목표
 Iceberg snapshot 간 변화를 감지하고, Claude API를 통해 자연어 진단 결과를 생성하여
@@ -133,7 +133,7 @@ Slack으로 전송하는 자동화 파이프라인 추가.
 - `airflow/dags/diagnosis_dag.py` — 위 모듈들을 연계하는 DAG
 
 ### LLM 설정
-- Model: claude-sonnet-4-20250514
+- Model: claude-haiku-4-5-20251001
 - API Key: 환경변수 `ANTHROPIC_API_KEY` (.env에 추가 필요)
 - 이상 감지된 경우에만 LLM 호출 (불필요한 API 비용 방지)
 
@@ -146,6 +146,6 @@ Slack으로 전송하는 자동화 파이프라인 추가.
 - [x] src/diagnosis/ 디렉토리 생성
 - [x] snapshot_extractor.py 생성
 - [x] anomaly_detector.py
-- [ ] llm_diagnostics.py
-- [ ] slack_notifier.py
-- [ ] diagnosis_dag.py
+- [x] llm_diagnostics.py
+- [x] slack_notifier.py
+- [x] diagnosis_dag.py

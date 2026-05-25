@@ -4,6 +4,8 @@ sys.path.insert(0, "/opt/workspace/src/diagnosis")
 from pyspark.sql import SparkSession
 from snapshot_extractor import SnapshotExtractor
 from anomaly_detector import AnomalyDetector
+from llm_diagnostics import LLMDiagnostics
+from slack_notifier import SlackNotifier
 
 
 if __name__ == "__main__":
@@ -23,6 +25,12 @@ if __name__ == "__main__":
     print(f"[Diagnosis] Anomalies found: {len(anomalies)}")
 
     if detector.should_trigger_llm(anomalies):
-        print("[Diagnosis] LLM diagnosis would be triggered.")
+        diagnostics = LLMDiagnostics()
+        result = diagnostics.diagnose(anomalies)
+        print(f"\n[Diagnosis] Severity : {result.overall_severity.upper()}")
+        print(f"[Diagnosis] Summary  : {result.summary}")
+        for action in result.recommended_actions:
+            print(f"[Diagnosis]   -> {action}")
+        SlackNotifier().notify(anomalies, result)
     else:
         print("[Diagnosis] All clear — no LLM call needed.")
